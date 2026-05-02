@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.QControl" parent="Theme.MaterialComponents.Light" />
+</resources>
