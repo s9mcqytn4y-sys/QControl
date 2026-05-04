@@ -30,7 +30,7 @@ class KirimItemOutboxUseCase(
         if (hasilTandaiSedangDikirim is HasilOperasi.Gagal) {
             return HasilOperasi.Gagal(
                 KesalahanAplikasi.PenyimpananLokal(
-                    "Gagal memulasi proses kirim: ${hasilTandaiSedangDikirim.kesalahan.pesan}"
+                    "Gagal memulai proses kirim: ${hasilTandaiSedangDikirim.kesalahan.pesan}"
                 )
             )
         }

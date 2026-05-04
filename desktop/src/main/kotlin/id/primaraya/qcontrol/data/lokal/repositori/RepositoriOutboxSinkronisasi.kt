@@ -179,9 +179,10 @@ class RepositoriOutboxSinkronisasi(
         return try {
             koneksi.bukaKoneksi().use { conn ->
                 // SQLite tidak punya fungsi DATE_SUB secara bawaan yang standar, pakai strftime atau date()
-                val sql = "DELETE FROM outbox_sinkronisasi WHERE status = 'BERHASIL' AND dibuat_pada < date('now', '-$hari days')"
-                conn.createStatement().use { stmt ->
-                    val jumlah = stmt.executeUpdate(sql)
+                val sql = "DELETE FROM outbox_sinkronisasi WHERE status = 'BERHASIL' AND dibuat_pada < date('now', '-' || ? || ' days')"
+                conn.prepareStatement(sql).use { ps ->
+                    ps.setInt(1, hari)
+                    val jumlah = ps.executeUpdate()
                     HasilOperasi.Berhasil(jumlah)
                 }
             }
