@@ -10,6 +10,11 @@
     *   Implementasi Unidirectional Data Flow dengan `StateFlow`.
     *   Struktur package yang mendukung Clean Architecture.
     *   Sentralisasi Design Token (Warna, Tipografi, Ukuran).
+6.  **Fondasi SQLite Lokal (Fase 1E)**:
+    *   Implementasi database SQLite menggunakan JDBC untuk Windows.
+    *   Automated Schema Migration (Tabel Konfigurasi, Cache Status Server, Outbox).
+    *   Repositori lokal untuk persistensi pengaturan aplikasi.
+    *   Integrasi status penyimpanan ke dalam Reactive UI (StateFlow).
 
 ## Cara Menjalankan Aplikasi (Running)
 Pastikan Anda memiliki JDK 17 terinstal di sistem Anda.

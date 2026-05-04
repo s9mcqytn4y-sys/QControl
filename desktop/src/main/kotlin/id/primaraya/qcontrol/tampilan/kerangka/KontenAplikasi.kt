@@ -7,12 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import id.primaraya.qcontrol.tampilan.halaman.*
 import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
+import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 
 @Composable
 fun KontenAplikasi(
     keadaan: KeadaanAplikasi,
-    padding: PaddingValues
+    padding: PaddingValues,
+    onAksi: (AksiAplikasi) -> Unit
 ) {
     Box(modifier = Modifier.padding(padding)) {
         when (keadaan.ruteAktif) {
@@ -22,7 +24,7 @@ fun KontenAplikasi(
             RuteAplikasi.ControlChart -> HalamanControlChart()
             RuteAplikasi.LaporanBulanan -> HalamanLaporanBulanan()
             RuteAplikasi.MasterData -> HalamanMasterData()
-            RuteAplikasi.Pengaturan -> HalamanPengaturan()
+            RuteAplikasi.Pengaturan -> HalamanPengaturan(keadaan = keadaan, onAksi = onAksi)
         }
     }
 }

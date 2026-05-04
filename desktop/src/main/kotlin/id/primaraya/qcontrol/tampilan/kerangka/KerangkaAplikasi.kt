@@ -5,32 +5,32 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
+import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 
 @Composable
 fun KerangkaAplikasi(
     keadaan: KeadaanAplikasi,
-    onPilihRute: (RuteAplikasi) -> Unit,
-    onPeriksaKoneksi: () -> Unit
+    onAksi: (AksiAplikasi) -> Unit
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         SidebarAplikasi(
             keadaan = keadaan,
-            onPilihRute = onPilihRute
+            onPilihRute = { onAksi(AksiAplikasi.PilihRute(it)) }
         )
 
         Scaffold(
             topBar = {
                 HeaderAplikasi(
                     keadaan = keadaan,
-                    onPeriksaKoneksi = onPeriksaKoneksi
+                    onPeriksaKoneksi = { onAksi(AksiAplikasi.PeriksaKoneksiServer) }
                 )
             }
         ) { padding ->
             KontenAplikasi(
                 keadaan = keadaan,
-                padding = padding
+                padding = padding,
+                onAksi = onAksi
             )
         }
     }

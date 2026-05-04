@@ -17,12 +17,14 @@ dependencies {
     implementation(compose.foundation)
     implementation(compose.materialIconsExtended)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
+    implementation(libs.sqlite.jdbc)
     testImplementation(libs.junit)
 }
 

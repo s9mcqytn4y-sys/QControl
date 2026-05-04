@@ -5,4 +5,5 @@ sealed class KesalahanAplikasi(val pesan: String) {
     class ResponTidakValid(pesan: String) : KesalahanAplikasi(pesan)
     class Server(pesan: String, val kode: String? = null) : KesalahanAplikasi(pesan)
     class TidakDiketahui(pesan: String) : KesalahanAplikasi(pesan)
+    class PenyimpananLokal(pesan: String) : KesalahanAplikasi(pesan)
 }
