@@ -26,6 +26,11 @@ class MigrasiDatabaseLokal(
                 migrasiVersi3(koneksi)
                 catatMigrasi(koneksi, 3, "tambah_kolom_email_sesi_auth")
             }
+
+            if (versiSaatIni < 4) {
+                migrasiVersi4(koneksi)
+                catatMigrasi(koneksi, 4, "tambah_tabel_cache_master_data")
+            }
         }
     }
 
@@ -166,6 +171,121 @@ class MigrasiDatabaseLokal(
             koneksi.createStatement().use { statement ->
                 statement.execute(sqlTambah)
             }
+        }
+    }
+
+    private fun migrasiVersi4(koneksi: Connection) {
+        val sqlMetadata = """
+            CREATE TABLE IF NOT EXISTS metadata_master_data (
+                kunci TEXT PRIMARY KEY,
+                nilai TEXT NOT NULL,
+                diperbarui_pada TEXT NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlLineProduksi = """
+            CREATE TABLE IF NOT EXISTS master_line_produksi (
+                id TEXT PRIMARY KEY,
+                kode_line TEXT NOT NULL UNIQUE,
+                nama_line TEXT NOT NULL,
+                aktif INTEGER NOT NULL,
+                urutan_tampil INTEGER NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlSlotWaktu = """
+            CREATE TABLE IF NOT EXISTS master_slot_waktu (
+                id TEXT PRIMARY KEY,
+                kode_slot TEXT NOT NULL UNIQUE,
+                label_slot TEXT NOT NULL,
+                jam_mulai TEXT,
+                jam_selesai TEXT,
+                aktif INTEGER NOT NULL,
+                urutan_tampil INTEGER NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlMaterial = """
+            CREATE TABLE IF NOT EXISTS master_material (
+                id TEXT PRIMARY KEY,
+                kode_material TEXT,
+                nama_material TEXT NOT NULL UNIQUE,
+                aktif INTEGER NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlPart = """
+            CREATE TABLE IF NOT EXISTS master_part (
+                id TEXT PRIMARY KEY,
+                kode_unik_part TEXT NOT NULL UNIQUE,
+                nama_part TEXT NOT NULL,
+                nomor_part TEXT,
+                material_id TEXT,
+                kode_material TEXT,
+                nama_material TEXT,
+                kode_proyek TEXT,
+                jumlah_item_per_kanban INTEGER,
+                line_default_id TEXT,
+                kode_line_default TEXT,
+                nama_line_default TEXT,
+                aktif INTEGER NOT NULL,
+                sumber_data TEXT
+            )
+        """.trimIndent()
+
+        val sqlKategoriDefect = """
+            CREATE TABLE IF NOT EXISTS master_kategori_defect (
+                id TEXT PRIMARY KEY,
+                kode_kategori TEXT NOT NULL UNIQUE,
+                nama_kategori TEXT NOT NULL,
+                aktif INTEGER NOT NULL,
+                urutan_tampil INTEGER NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlJenisDefect = """
+            CREATE TABLE IF NOT EXISTS master_jenis_defect (
+                id TEXT PRIMARY KEY,
+                kode_defect TEXT NOT NULL UNIQUE,
+                nama_defect TEXT NOT NULL,
+                kategori_defect_id TEXT,
+                kode_kategori TEXT,
+                nama_kategori TEXT,
+                aktif INTEGER NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlRelasiPartDefect = """
+            CREATE TABLE IF NOT EXISTS master_relasi_part_defect (
+                id TEXT PRIMARY KEY,
+                part_id TEXT NOT NULL,
+                kode_unik_part TEXT,
+                jenis_defect_id TEXT NOT NULL,
+                kode_defect TEXT,
+                urutan_tampil INTEGER NOT NULL,
+                aktif INTEGER NOT NULL,
+                UNIQUE(part_id, jenis_defect_id)
+            )
+        """.trimIndent()
+
+        koneksi.autoCommit = false
+        try {
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlMetadata)
+                statement.execute(sqlLineProduksi)
+                statement.execute(sqlSlotWaktu)
+                statement.execute(sqlMaterial)
+                statement.execute(sqlPart)
+                statement.execute(sqlKategoriDefect)
+                statement.execute(sqlJenisDefect)
+                statement.execute(sqlRelasiPartDefect)
+            }
+            koneksi.commit()
+        } catch (e: Exception) {
+            koneksi.rollback()
+            throw e
+        } finally {
+            koneksi.autoCommit = true
         }
     }
 }

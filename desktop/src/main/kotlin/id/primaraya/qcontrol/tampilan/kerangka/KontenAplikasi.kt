@@ -23,7 +23,7 @@ fun KontenAplikasi(
             RuteAplikasi.RecordingDataDefect -> HalamanRecordingDataDefect()
             RuteAplikasi.ControlChart -> HalamanControlChart()
             RuteAplikasi.LaporanBulanan -> HalamanLaporanBulanan()
-            RuteAplikasi.MasterData -> HalamanMasterData()
+            RuteAplikasi.MasterData -> HalamanMasterData(keadaan = keadaan, onAksi = onAksi)
             RuteAplikasi.Pengaturan -> HalamanPengaturan(keadaan = keadaan, onAksi = onAksi)
         }
     }

@@ -36,7 +36,19 @@ data class KeadaanAplikasi(
     // Autentikasi (Fase 2C)
     val sesiAktif: id.primaraya.qcontrol.ranah.model.Autentikasi? = null,
     val sedangLogin: Boolean = false,
-    val pesanLogin: String? = null
+    val pesanLogin: String? = null,
+
+    // Master Data (Fase 2D-R2)
+    val sedangMenarikMasterData: Boolean = false,
+    val pesanMasterData: String? = null,
+    val ringkasanMasterData: id.primaraya.qcontrol.ranah.model.RingkasanMasterData? = null,
+    val daftarPartMaster: List<id.primaraya.qcontrol.ranah.model.Part> = emptyList(),
+    val daftarJenisDefectMaster: List<id.primaraya.qcontrol.ranah.model.JenisDefect> = emptyList(),
+    val daftarMaterialMaster: List<id.primaraya.qcontrol.ranah.model.Material> = emptyList(),
+    val daftarSlotWaktuMaster: List<id.primaraya.qcontrol.ranah.model.SlotWaktu> = emptyList(),
+    val daftarLineProduksiMaster: List<id.primaraya.qcontrol.ranah.model.LineProduksi> = emptyList(),
+    val kataKunciMasterData: String = "",
+    val tabMasterDataAktif: TabMasterData = TabMasterData.RINGKASAN
 )
 
 sealed class StatusRingkasanOutbox {
@@ -60,3 +72,11 @@ sealed class StatusPenyimpananLokal {
     object Gagal : StatusPenyimpananLokal()
 }
 
+enum class TabMasterData(val label: String) {
+    RINGKASAN("Ringkasan"),
+    PART("Part"),
+    JENIS_DEFECT("Jenis Defect"),
+    MATERIAL("Material"),
+    SLOT_WAKTU("Slot Waktu"),
+    LINE_PRODUKSI("Line Produksi")
+}

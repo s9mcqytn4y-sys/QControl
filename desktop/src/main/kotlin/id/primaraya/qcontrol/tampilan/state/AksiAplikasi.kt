@@ -20,4 +20,10 @@ sealed class AksiAplikasi {
     data class Login(val email: String, val kataSandi: String) : AksiAplikasi()
     object Logout : AksiAplikasi()
     object InisialisasiSesi : AksiAplikasi()
+
+    // Master Data (Fase 2D-R2)
+    object TarikMasterDataDariServer : AksiAplikasi()
+    object MuatMasterDataLokal : AksiAplikasi()
+    data class PilihTabMasterData(val tab: TabMasterData) : AksiAplikasi()
+    data class UbahKataKunciMasterData(val kataKunci: String) : AksiAplikasi()
 }

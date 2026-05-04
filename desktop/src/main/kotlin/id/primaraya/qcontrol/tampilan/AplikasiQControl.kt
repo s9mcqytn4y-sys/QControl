@@ -36,7 +36,16 @@ import id.primaraya.qcontrol.ranah.usecase.MasukSesiUseCase
 import id.primaraya.qcontrol.ranah.usecase.KeluarSesiUseCase
 import id.primaraya.qcontrol.ranah.usecase.AmbilSesiAktifUseCase
 import id.primaraya.qcontrol.tampilan.halaman.HalamanLogin
-
+import id.primaraya.qcontrol.data.remote.layanan.LayananMasterDataRemote
+import id.primaraya.qcontrol.data.lokal.repositori.RepositoriMasterDataLokal
+import id.primaraya.qcontrol.data.repositori.RepositoriMasterDataQControl
+import id.primaraya.qcontrol.ranah.usecase.TarikMasterDataQControlUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaRingkasanMasterDataUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarPartMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarJenisDefectMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarMaterialMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarSlotWaktuMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarLineProduksiMasterUseCase
 
 @Composable
 fun AplikasiQControl() {
@@ -75,6 +84,17 @@ fun AplikasiQControl() {
     val keluarSesiUseCase = remember { KeluarSesiUseCase(repositoriAutentikasiLokal) }
     val ambilSesiAktifUseCase = remember { AmbilSesiAktifUseCase(repositoriAutentikasiLokal) }
 
+    val layananMasterDataRemote = remember { LayananMasterDataRemote(klienHttp) }
+    val repositoriMasterDataLokal = remember { RepositoriMasterDataLokal(koneksiDatabaseLokal, migrasiDatabaseLokal) }
+    val repositoriMasterData = remember { RepositoriMasterDataQControl(layananMasterDataRemote, repositoriMasterDataLokal) }
+    val tarikMasterDataUseCase = remember { TarikMasterDataQControlUseCase(repositoriMasterData, ambilSesiAktifUseCase) }
+    val bacaRingkasanMasterDataUseCase = remember { BacaRingkasanMasterDataUseCase(repositoriMasterData) }
+    val bacaDaftarPartMasterUseCase = remember { BacaDaftarPartMasterUseCase(repositoriMasterData) }
+    val bacaDaftarJenisDefectMasterUseCase = remember { BacaDaftarJenisDefectMasterUseCase(repositoriMasterData) }
+    val bacaDaftarMaterialMasterUseCase = remember { BacaDaftarMaterialMasterUseCase(repositoriMasterData) }
+    val bacaDaftarSlotWaktuMasterUseCase = remember { BacaDaftarSlotWaktuMasterUseCase(repositoriMasterData) }
+    val bacaDaftarLineProduksiMasterUseCase = remember { BacaDaftarLineProduksiMasterUseCase(repositoriMasterData) }
+
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
     val pengelolaState = remember { 
@@ -89,7 +109,14 @@ fun AplikasiQControl() {
             masukSesiUseCase,
             keluarSesiUseCase,
             ambilSesiAktifUseCase,
-            pengelolaSinkronisasi
+            pengelolaSinkronisasi,
+            tarikMasterDataUseCase,
+            bacaRingkasanMasterDataUseCase,
+            bacaDaftarPartMasterUseCase,
+            bacaDaftarJenisDefectMasterUseCase,
+            bacaDaftarMaterialMasterUseCase,
+            bacaDaftarSlotWaktuMasterUseCase,
+            bacaDaftarLineProduksiMasterUseCase
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()

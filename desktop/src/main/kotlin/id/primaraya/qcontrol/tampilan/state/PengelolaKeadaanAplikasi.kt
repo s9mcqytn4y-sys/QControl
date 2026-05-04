@@ -22,6 +22,13 @@ import id.primaraya.qcontrol.ranah.usecase.KeluarSesiUseCase
 import id.primaraya.qcontrol.ranah.usecase.AmbilSesiAktifUseCase
 import id.primaraya.qcontrol.ranah.model.Autentikasi
 import id.primaraya.qcontrol.ranah.usecase.UjiUlangOutboxBerhasilTerakhirUseCase
+import id.primaraya.qcontrol.ranah.usecase.TarikMasterDataQControlUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaRingkasanMasterDataUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarPartMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarJenisDefectMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarMaterialMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarSlotWaktuMasterUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarLineProduksiMasterUseCase
 
 class PengelolaKeadaanAplikasi(
     private val periksaKesehatanServerUseCase: PeriksaKesehatanServerUseCase,
@@ -35,6 +42,13 @@ class PengelolaKeadaanAplikasi(
     private val keluarSesiUseCase: KeluarSesiUseCase,
     private val ambilSesiAktifUseCase: AmbilSesiAktifUseCase,
     private val pengelolaSinkronisasi: PengelolaSinkronisasi,
+    private val tarikMasterDataUseCase: TarikMasterDataQControlUseCase,
+    private val bacaRingkasanMasterDataUseCase: BacaRingkasanMasterDataUseCase,
+    private val bacaDaftarPartMasterUseCase: BacaDaftarPartMasterUseCase,
+    private val bacaDaftarJenisDefectMasterUseCase: BacaDaftarJenisDefectMasterUseCase,
+    private val bacaDaftarMaterialMasterUseCase: BacaDaftarMaterialMasterUseCase,
+    private val bacaDaftarSlotWaktuMasterUseCase: BacaDaftarSlotWaktuMasterUseCase,
+    private val bacaDaftarLineProduksiMasterUseCase: BacaDaftarLineProduksiMasterUseCase,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
@@ -68,6 +82,7 @@ class PengelolaKeadaanAplikasi(
         periksaKoneksi()
         muatRingkasanOutbox()
         periksaSesiAktif()
+        muatMasterDataLokal()
     }
 
     fun tangani(aksi: AksiAplikasi) {
@@ -116,6 +131,20 @@ class PengelolaKeadaanAplikasi(
             }
             is AksiAplikasi.InisialisasiSesi -> {
                 periksaSesiAktif()
+            }
+            is AksiAplikasi.TarikMasterDataDariServer -> {
+                tarikMasterDataDariServer()
+            }
+            is AksiAplikasi.MuatMasterDataLokal -> {
+                muatMasterDataLokal()
+            }
+            is AksiAplikasi.PilihTabMasterData -> {
+                _keadaan.update { it.copy(tabMasterDataAktif = aksi.tab) }
+                muatDaftarTabMasterData(aksi.tab)
+            }
+            is AksiAplikasi.UbahKataKunciMasterData -> {
+                _keadaan.update { it.copy(kataKunciMasterData = aksi.kataKunci) }
+                muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif, aksi.kataKunci)
             }
         }
     }
@@ -384,6 +413,100 @@ class PengelolaKeadaanAplikasi(
             keluarSesiUseCase.eksekusi()
             _keadaan.update { it.copy(sesiAktif = null) }
             pengelolaSinkronisasi.tokenAktif = null
+        }
+    }
+
+    private fun tarikMasterDataDariServer() {
+        _keadaan.update {
+            it.copy(
+                sedangMenarikMasterData = true,
+                pesanMasterData = "Menarik master data dari PGNServer..."
+            )
+        }
+        lingkup.launch {
+            when (val hasil = tarikMasterDataUseCase.eksekusi()) {
+                is HasilOperasi.Berhasil<*> -> {
+                    val ringkasan = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanMasterData
+                    _keadaan.update {
+                        it.copy(
+                            sedangMenarikMasterData = false,
+                            pesanMasterData = "Master data berhasil diperbarui.",
+                            ringkasanMasterData = ringkasan
+                        )
+                    }
+                    muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update {
+                        it.copy(
+                            sedangMenarikMasterData = false,
+                            pesanMasterData = hasil.kesalahan.pesan
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun muatMasterDataLokal() {
+        lingkup.launch {
+            when (val hasil = bacaRingkasanMasterDataUseCase.eksekusi()) {
+                is HasilOperasi.Berhasil<*> -> {
+                    val ringkasan = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanMasterData
+                    _keadaan.update { it.copy(ringkasanMasterData = ringkasan, pesanMasterData = null) }
+                    muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
+                }
+                is HasilOperasi.Gagal -> {
+                    // Master data belum pernah ditarik — biarkan state kosong, tidak error
+                    _keadaan.update { it.copy(ringkasanMasterData = null) }
+                }
+            }
+        }
+    }
+
+    private fun muatDaftarTabMasterData(
+        tab: TabMasterData,
+        kataKunci: String = _keadaan.value.kataKunciMasterData
+    ) {
+        lingkup.launch {
+            when (tab) {
+                TabMasterData.PART -> {
+                    val hasil = bacaDaftarPartMasterUseCase.eksekusi(kataKunci)
+                    if (hasil is HasilOperasi.Berhasil<*>) {
+                        @Suppress("UNCHECKED_CAST")
+                        _keadaan.update { it.copy(daftarPartMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.Part>) }
+                    }
+                }
+                TabMasterData.JENIS_DEFECT -> {
+                    val hasil = bacaDaftarJenisDefectMasterUseCase.eksekusi(kataKunci)
+                    if (hasil is HasilOperasi.Berhasil<*>) {
+                        @Suppress("UNCHECKED_CAST")
+                        _keadaan.update { it.copy(daftarJenisDefectMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.JenisDefect>) }
+                    }
+                }
+                TabMasterData.MATERIAL -> {
+                    val hasil = bacaDaftarMaterialMasterUseCase.eksekusi(kataKunci)
+                    if (hasil is HasilOperasi.Berhasil<*>) {
+                        @Suppress("UNCHECKED_CAST")
+                        _keadaan.update { it.copy(daftarMaterialMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.Material>) }
+                    }
+                }
+                TabMasterData.SLOT_WAKTU -> {
+                    val hasil = bacaDaftarSlotWaktuMasterUseCase.eksekusi()
+                    if (hasil is HasilOperasi.Berhasil<*>) {
+                        @Suppress("UNCHECKED_CAST")
+                        _keadaan.update { it.copy(daftarSlotWaktuMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.SlotWaktu>) }
+                    }
+                }
+                TabMasterData.LINE_PRODUKSI -> {
+                    val hasil = bacaDaftarLineProduksiMasterUseCase.eksekusi()
+                    if (hasil is HasilOperasi.Berhasil<*>) {
+                        @Suppress("UNCHECKED_CAST")
+                        _keadaan.update { it.copy(daftarLineProduksiMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.LineProduksi>) }
+                    }
+                }
+                TabMasterData.RINGKASAN -> { /* tidak perlu memuat daftar */ }
+            }
         }
     }
 }
