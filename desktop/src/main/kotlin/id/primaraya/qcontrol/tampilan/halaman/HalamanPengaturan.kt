@@ -131,70 +131,144 @@ fun HalamanPengaturan(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Outbox Sinkronisasi",
+                    text = "Manajemen Antrean (Outbox)",
                     style = MaterialTheme.typography.titleMedium
                 )
                 
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Sinkronisasi Otomatis",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Kirim data ke server secara periodik",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    Switch(
+                        checked = keadaan.sinkronisasiOtomatisAktif,
+                        onCheckedChange = { aktif ->
+                            if (aktif) onAksi(AksiAplikasi.AktifkanSinkronisasiOtomatis)
+                            else onAksi(AksiAplikasi.NonaktifkanSinkronisasiOtomatis)
+                        }
+                    )
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp)
+
+                // Status Worker
+                Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val warnaStatusOutbox = when (keadaan.statusRingkasanOutbox) {
-                        StatusRingkasanOutbox.Berhasil -> MaterialTheme.colorScheme.primary
-                        StatusRingkasanOutbox.Memuat -> MaterialTheme.colorScheme.tertiary
-                        StatusRingkasanOutbox.Gagal -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.outline
+                    if (keadaan.sedangSinkronisasi) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Sedang mensinkronkan...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+                                    if (keadaan.sinkronisasiOtomatisAktif) MaterialTheme.colorScheme.primary 
+                                    else MaterialTheme.colorScheme.outline, 
+                                    RoundedCornerShape(6.dp)
+                                )
+                        )
+                        Text(
+                            text = if (keadaan.sinkronisasiOtomatisAktif) "Worker Aktif (Idle)" else "Worker Nonaktif",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(warnaStatusOutbox, RoundedCornerShape(6.dp))
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    keadaan.ringkasanOutboxSinkronisasi?.let { r ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                RingkasanItem("Total", r.jumlahTotal.toString())
+                                RingkasanItem("Menunggu", r.jumlahMenunggu.toString())
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                RingkasanItem("Berhasil", r.jumlahBerhasil.toString(), MaterialTheme.colorScheme.primary)
+                                RingkasanItem("Gagal/Error", (r.jumlahGagal + r.jumlahKonflik).toString(), MaterialTheme.colorScheme.error)
+                            }
+                        }
+                        
+                        if (r.jumlahSedangDikirim > 0) {
+                            Text(
+                                text = "${r.jumlahSedangDikirim} item sedang diproses...",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Sinkronisasi Terakhir: ${keadaan.waktuSinkronisasiTerakhir ?: "-"}",
+                        style = MaterialTheme.typography.labelSmall
                     )
-                    Text(text = keadaan.pesanRingkasanOutbox ?: "Status outbox siap.")
-                }
-
-                keadaan.ringkasanOutboxSinkronisasi?.let { r ->
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        RingkasanItem("Total Item", r.jumlahTotal.toString())
-                        RingkasanItem("Menunggu", r.jumlahMenunggu.toString())
-                        RingkasanItem("Sedang Dikirim", r.jumlahSedangDikirim.toString())
-                        RingkasanItem("Berhasil", r.jumlahBerhasil.toString(), MaterialTheme.colorScheme.primary)
-                        RingkasanItem("Gagal", r.jumlahGagal.toString(), MaterialTheme.colorScheme.error)
-                        RingkasanItem("Konflik", r.jumlahKonflik.toString(), MaterialTheme.colorScheme.error)
+                    keadaan.pesanSinkronisasiTerakhir?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { onAksi(AksiAplikasi.MuatRingkasanOutboxSinkronisasi) },
-                        enabled = keadaan.statusRingkasanOutbox != StatusRingkasanOutbox.Memuat
-                    ) {
-                        Text("Refresh")
-                    }
-
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Button(
                         onClick = { onAksi(AksiAplikasi.SinkronkanOutboxSekarang) },
-                        enabled = keadaan.statusRingkasanOutbox != StatusRingkasanOutbox.Memuat
+                        modifier = Modifier.weight(1f),
+                        enabled = !keadaan.sedangSinkronisasi
                     ) {
                         Text("Sinkronkan Sekarang")
                     }
                     
                     OutlinedButton(
-                        onClick = { onAksi(AksiAplikasi.BuatContohItemOutboxUntukPengujian) },
-                        enabled = keadaan.statusRingkasanOutbox != StatusRingkasanOutbox.Memuat
+                        onClick = { onAksi(AksiAplikasi.ResetOutboxSedangDikirim) },
+                        modifier = Modifier.weight(0.6f),
+                        enabled = !keadaan.sedangSinkronisasi
                     ) {
-                        Text("Tambah Test Item")
+                        Text("Reset Stuck")
                     }
                 }
-                Text(
-                    text = "Tombol contoh untuk pengujian fondasi offline-first.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+
+                OutlinedButton(
+                    onClick = { onAksi(AksiAplikasi.BuatContohItemOutboxUntukPengujian) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !keadaan.sedangSinkronisasi
+                ) {
+                    Text("Tambah Test Item (Simulasi)")
+                }
             }
         }
     }

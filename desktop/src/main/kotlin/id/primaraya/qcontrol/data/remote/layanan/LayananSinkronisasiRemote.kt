@@ -31,6 +31,7 @@ class LayananSinkronisasiRemote(private val klien: HttpClient) {
                 }
                 
                 header("X-Idempotency-Key", idempotencyKey)
+                header(HttpHeaders.Accept, ContentType.Application.Json.toString())
                 contentType(ContentType.Application.Json)
                 
                 if (metode != MetodeHttpSinkronisasi.GET) {
@@ -38,22 +39,38 @@ class LayananSinkronisasiRemote(private val klien: HttpClient) {
                 }
             }
 
-            when {
-                respon.status.isSuccess() -> {
+            when (respon.status) {
+                HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.Accepted, HttpStatusCode.NoContent -> {
                     HasilOperasi.Berhasil(respon.bodyAsText())
                 }
-                respon.status == HttpStatusCode.Conflict -> {
+                HttpStatusCode.NotFound -> {
                     HasilOperasi.Gagal(
                         KesalahanAplikasi.Server(
-                            pesan = "Terjadi konflik data (Idempotency Key mungkin sudah digunakan)",
+                            pesan = "Endpoint sinkronisasi belum tersedia di server (404)",
+                            kode = "404"
+                        )
+                    )
+                }
+                HttpStatusCode.Conflict -> {
+                    HasilOperasi.Gagal(
+                        KesalahanAplikasi.Server(
+                            pesan = "Terjadi konflik data (Idempotency Key sudah pernah diproses)",
                             kode = "409"
+                        )
+                    )
+                }
+                HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
+                    HasilOperasi.Gagal(
+                        KesalahanAplikasi.Server(
+                            pesan = "Sesi atau hak akses tidak valid untuk sinkronisasi ini",
+                            kode = respon.status.value.toString()
                         )
                     )
                 }
                 else -> {
                     HasilOperasi.Gagal(
                         KesalahanAplikasi.Server(
-                            pesan = "Server mengembalikan status: ${respon.status.value} ${respon.status.description}",
+                            pesan = "Server mengalami kendala (Status: ${respon.status.value})",
                             kode = respon.status.value.toString()
                         )
                     )

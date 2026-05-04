@@ -25,6 +25,7 @@ import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxBerhasilUseCase
 import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxGagalUseCase
 import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxKonflikUseCase
 import id.primaraya.qcontrol.ranah.usecase.BacaDaftarOutboxMenungguUseCase
+import id.primaraya.qcontrol.ranah.usecase.ResetOutboxSedangDikirimUseCase
 
 @Composable
 fun AplikasiQControl() {
@@ -52,8 +53,9 @@ fun AplikasiQControl() {
     val tandaiOutboxGagalUseCase = remember { TandaiOutboxGagalUseCase(repositoriOutboxSinkronisasi) }
     val tandaiOutboxKonflikUseCase = remember { TandaiOutboxKonflikUseCase(repositoriOutboxSinkronisasi) }
 
-    val layananSinkronisasiRemote = remember { id.primaraya.qcontrol.data.remote.layanan.LayananSinkronisasiRemote(klienHttp) }
+     val layananSinkronisasiRemote = remember { id.primaraya.qcontrol.data.remote.layanan.LayananSinkronisasiRemote(klienHttp) }
     val kirimItemOutboxUseCase = remember { id.primaraya.qcontrol.ranah.usecase.KirimItemOutboxUseCase(repositoriOutboxSinkronisasi, layananSinkronisasiRemote) }
+    val resetOutboxSedangDikirimUseCase = remember { ResetOutboxSedangDikirimUseCase(repositoriOutboxSinkronisasi) }
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
     val pengelolaState = remember { 
@@ -63,6 +65,7 @@ fun AplikasiQControl() {
             bacaKonfigurasiLokalUseCase,
             buatItemOutboxSinkronisasiUseCase,
             bacaRingkasanOutboxSinkronisasiUseCase,
+            resetOutboxSedangDikirimUseCase,
             pengelolaSinkronisasi
         ) 
     }
@@ -75,8 +78,8 @@ fun AplikasiQControl() {
         pengelolaState.tangani(AksiAplikasi.PeriksaKoneksiServer)
         pengelolaState.tangani(AksiAplikasi.MuatRingkasanOutboxSinkronisasi)
         
-        // Mulai sinkronisasi otomatis setiap 30 detik
-        pengelolaSinkronisasi.mulaiSinkronisasiOtomatis(intervalMs = 30000)
+        // Mulai sinkronisasi otomatis (interval dikonfigurasi di KonfigurasiSinkronisasi)
+        pengelolaSinkronisasi.mulaiSinkronisasiOtomatis()
     }
 
     TemaQControl {

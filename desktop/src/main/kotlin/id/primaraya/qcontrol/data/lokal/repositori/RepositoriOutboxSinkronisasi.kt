@@ -149,6 +149,32 @@ class RepositoriOutboxSinkronisasi(
         }
     }
 
+    fun resetSedangDikirimKadaluarsa(batasMenit: Long): HasilOperasi<Int> {
+        return try {
+            koneksi.bukaKoneksi().use { conn ->
+                // Mengembalikan status SEDANG_DIKIRIM ke MENUNGGU jika sudah terlalu lama (stuck)
+                val sql = """
+                    UPDATE outbox_sinkronisasi 
+                    SET status = ?, 
+                        pesan_gagal_terakhir = ?, 
+                        diperbarui_pada = CURRENT_TIMESTAMP 
+                    WHERE status = 'SEDANG_DIKIRIM' 
+                    AND (datetime(diperbarui_pada) < datetime('now', '-' || ? || ' minutes') OR diperbarui_pada IS NULL)
+                """.trimIndent()
+                
+                conn.prepareStatement(sql).use { ps ->
+                    ps.setString(1, StatusOutboxSinkronisasi.MENUNGGU.name)
+                    ps.setString(2, "Dikembalikan ke MENUNGGU karena proses sebelumnya terputus")
+                    ps.setLong(3, batasMenit)
+                    val jumlah = ps.executeUpdate()
+                    HasilOperasi.Berhasil(jumlah)
+                }
+            }
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal me-reset item sedang dikirim: ${e.message}"))
+        }
+    }
+
     fun hapusBerhasilLebihLamaDari(hari: Int): HasilOperasi<Int> {
         return try {
             koneksi.bukaKoneksi().use { conn ->

@@ -23,7 +23,11 @@ data class KeadaanAplikasi(
     val pesanRingkasanOutbox: String? = null,
     val namaPengguna: String = "Wahyu",
     val peranPengguna: String = "QC Inspector",
-    val lineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT
+    val lineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT,
+    val sinkronisasiOtomatisAktif: Boolean = false,
+    val sedangSinkronisasi: Boolean = false,
+    val pesanSinkronisasiTerakhir: String? = null,
+    val waktuSinkronisasiTerakhir: String? = null
 )
 
 sealed class StatusRingkasanOutbox {

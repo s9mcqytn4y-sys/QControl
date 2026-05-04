@@ -25,33 +25,65 @@ class KirimItemOutboxUseCase(
      * 5. Jika Gagal Lainnya: Tandai 'GAGAL' di lokal (akan dicoba ulang otomatis).
      */
     suspend fun eksekusi(item: ItemOutboxSinkronisasi): HasilOperasi<Unit> {
-        // 1. Tandai sedang dikirim agar tidak diproses oleh worker lain jika ada paralisme
-        repositoriLokal.tandaiSedangDikirim(item.id)
+        // 1. Tandai sedang dikirim agar tidak diproses oleh worker lain jika ada paralelisme
+        val hasilTandaiSedangDikirim = repositoriLokal.tandaiSedangDikirim(item.id)
+        if (hasilTandaiSedangDikirim is HasilOperasi.Gagal) {
+            return HasilOperasi.Gagal(
+                KesalahanAplikasi.PenyimpananLokal(
+                    "Gagal memulasi proses kirim: ${hasilTandaiSedangDikirim.kesalahan.pesan}"
+                )
+            )
+        }
         
         // 2. Kirim payload
-        val hasil = layananRemote.kirimPayload(
+        val hasilRemote = layananRemote.kirimPayload(
             endpoint = item.endpointTujuan,
             metode = item.metodeHttp,
             payloadJson = item.payloadJson,
             idempotencyKey = item.idempotencyKey
         )
         
-        return when (hasil) {
+        return when (hasilRemote) {
             is HasilOperasi.Berhasil -> {
-                // 3. Tandai berhasil
-                repositoriLokal.tandaiBerhasil(item.id)
-                HasilOperasi.Berhasil(Unit)
+                // 3. Tandai berhasil di lokal
+                val hasilTandaiBerhasil = repositoriLokal.tandaiBerhasil(item.id)
+                if (hasilTandaiBerhasil is HasilOperasi.Gagal) {
+                    HasilOperasi.Gagal(
+                        KesalahanAplikasi.PenyimpananLokal(
+                            "Data terkirim ke server, tapi gagal memperbarui status lokal: ${hasilTandaiBerhasil.kesalahan.pesan}"
+                        )
+                    )
+                } else {
+                    HasilOperasi.Berhasil(Unit)
+                }
             }
             is HasilOperasi.Gagal -> {
-                val kesalahan = hasil.kesalahan
-                if (kesalahan is KesalahanAplikasi.Server && kesalahan.kode == "409") {
+                val kesalahanRemote = hasilRemote.kesalahan
+                if (kesalahanRemote is KesalahanAplikasi.Server && kesalahanRemote.kode == "409") {
                     // 4. Tandai konflik (tidak akan dicoba lagi otomatis)
-                    repositoriLokal.tandaiKonflik(item.id, kesalahan.pesan)
+                    val hasilTandaiKonflik = repositoriLokal.tandaiKonflik(item.id, kesalahanRemote.pesan)
+                    if (hasilTandaiKonflik is HasilOperasi.Gagal) {
+                        HasilOperasi.Gagal(
+                            KesalahanAplikasi.TidakDiketahui(
+                                "Server konflik dan gagal simpan status lokal: ${hasilTandaiKonflik.kesalahan.pesan}"
+                            )
+                        )
+                    } else {
+                        HasilOperasi.Gagal(kesalahanRemote)
+                    }
                 } else {
                     // 5. Tandai gagal (akan dicoba lagi nanti oleh worker)
-                    repositoriLokal.tandaiGagal(item.id, kesalahan.pesan)
+                    val hasilTandaiGagal = repositoriLokal.tandaiGagal(item.id, kesalahanRemote.pesan)
+                    if (hasilTandaiGagal is HasilOperasi.Gagal) {
+                        HasilOperasi.Gagal(
+                            KesalahanAplikasi.TidakDiketahui(
+                                "Server gagal dan gagal simpan status lokal: ${hasilTandaiGagal.kesalahan.pesan}"
+                            )
+                        )
+                    } else {
+                        HasilOperasi.Gagal(kesalahanRemote)
+                    }
                 }
-                HasilOperasi.Gagal(kesalahan)
             }
         }
     }

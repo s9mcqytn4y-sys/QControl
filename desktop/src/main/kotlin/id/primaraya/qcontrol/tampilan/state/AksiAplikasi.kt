@@ -11,4 +11,7 @@ sealed class AksiAplikasi {
     object MuatRingkasanOutboxSinkronisasi : AksiAplikasi()
     object BuatContohItemOutboxUntukPengujian : AksiAplikasi()
     object SinkronkanOutboxSekarang : AksiAplikasi()
+    object AktifkanSinkronisasiOtomatis : AksiAplikasi()
+    object NonaktifkanSinkronisasiOtomatis : AksiAplikasi()
+    object ResetOutboxSedangDikirim : AksiAplikasi()
 }
