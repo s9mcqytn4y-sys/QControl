@@ -18,6 +18,13 @@ import id.primaraya.qcontrol.data.lokal.repositori.RepositoriStatusDatabaseLokal
 import id.primaraya.qcontrol.ranah.usecase.BacaKonfigurasiLokalUseCase
 import id.primaraya.qcontrol.ranah.usecase.PeriksaDatabaseLokalUseCase
 import id.primaraya.qcontrol.ranah.usecase.SimpanKonfigurasiLokalUseCase
+import id.primaraya.qcontrol.data.lokal.repositori.RepositoriOutboxSinkronisasi
+import id.primaraya.qcontrol.ranah.usecase.BuatItemOutboxSinkronisasiUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaRingkasanOutboxSinkronisasiUseCase
+import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxBerhasilUseCase
+import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxGagalUseCase
+import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxKonflikUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaDaftarOutboxMenungguUseCase
 
 @Composable
 fun AplikasiQControl() {
@@ -32,16 +39,31 @@ fun AplikasiQControl() {
     val migrasiDatabaseLokal = remember { MigrasiDatabaseLokal(koneksiDatabaseLokal) }
     val repositoriStatusDatabaseLokal = remember { RepositoriStatusDatabaseLokal(penyediaPathDatabaseLokal, koneksiDatabaseLokal, migrasiDatabaseLokal) }
     val repositoriKonfigurasiLokal = remember { RepositoriKonfigurasiLokal(koneksiDatabaseLokal) }
+    val repositoriOutboxSinkronisasi = remember { RepositoriOutboxSinkronisasi(koneksiDatabaseLokal, migrasiDatabaseLokal) }
     
     val periksaDatabaseLokalUseCase = remember { PeriksaDatabaseLokalUseCase(repositoriStatusDatabaseLokal) }
     val bacaKonfigurasiLokalUseCase = remember { BacaKonfigurasiLokalUseCase(repositoriKonfigurasiLokal) }
     val simpanKonfigurasiLokalUseCase = remember { SimpanKonfigurasiLokalUseCase(repositoriKonfigurasiLokal) }
+    
+    val buatItemOutboxSinkronisasiUseCase = remember { BuatItemOutboxSinkronisasiUseCase(repositoriOutboxSinkronisasi) }
+    val bacaRingkasanOutboxSinkronisasiUseCase = remember { BacaRingkasanOutboxSinkronisasiUseCase(repositoriOutboxSinkronisasi) }
+    val bacaDaftarOutboxMenungguUseCase = remember { BacaDaftarOutboxMenungguUseCase(repositoriOutboxSinkronisasi) }
+    val tandaiOutboxBerhasilUseCase = remember { TandaiOutboxBerhasilUseCase(repositoriOutboxSinkronisasi) }
+    val tandaiOutboxGagalUseCase = remember { TandaiOutboxGagalUseCase(repositoriOutboxSinkronisasi) }
+    val tandaiOutboxKonflikUseCase = remember { TandaiOutboxKonflikUseCase(repositoriOutboxSinkronisasi) }
+
+    val layananSinkronisasiRemote = remember { id.primaraya.qcontrol.data.remote.layanan.LayananSinkronisasiRemote(klienHttp) }
+    val kirimItemOutboxUseCase = remember { id.primaraya.qcontrol.ranah.usecase.KirimItemOutboxUseCase(repositoriOutboxSinkronisasi, layananSinkronisasiRemote) }
+    val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
     val pengelolaState = remember { 
         PengelolaKeadaanAplikasi(
             periksaKesehatanServerUseCase,
             periksaDatabaseLokalUseCase,
-            bacaKonfigurasiLokalUseCase
+            bacaKonfigurasiLokalUseCase,
+            buatItemOutboxSinkronisasiUseCase,
+            bacaRingkasanOutboxSinkronisasiUseCase,
+            pengelolaSinkronisasi
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()
@@ -51,6 +73,10 @@ fun AplikasiQControl() {
         pengelolaState.tangani(AksiAplikasi.MuatKonfigurasiLokal)
         pengelolaState.tangani(AksiAplikasi.PeriksaDatabaseLokal)
         pengelolaState.tangani(AksiAplikasi.PeriksaKoneksiServer)
+        pengelolaState.tangani(AksiAplikasi.MuatRingkasanOutboxSinkronisasi)
+        
+        // Mulai sinkronisasi otomatis setiap 30 detik
+        pengelolaSinkronisasi.mulaiSinkronisasiOtomatis(intervalMs = 30000)
     }
 
     TemaQControl {

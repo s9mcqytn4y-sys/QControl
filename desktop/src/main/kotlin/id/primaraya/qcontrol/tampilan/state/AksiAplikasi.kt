@@ -8,4 +8,7 @@ sealed class AksiAplikasi {
     object PeriksaKoneksiServer : AksiAplikasi()
     object PeriksaDatabaseLokal : AksiAplikasi()
     object MuatKonfigurasiLokal : AksiAplikasi()
+    object MuatRingkasanOutboxSinkronisasi : AksiAplikasi()
+    object BuatContohItemOutboxUntukPengujian : AksiAplikasi()
+    object SinkronkanOutboxSekarang : AksiAplikasi()
 }

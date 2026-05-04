@@ -12,11 +12,17 @@ import kotlinx.coroutines.launch
 
 import id.primaraya.qcontrol.ranah.usecase.BacaKonfigurasiLokalUseCase
 import id.primaraya.qcontrol.ranah.usecase.PeriksaDatabaseLokalUseCase
+import id.primaraya.qcontrol.ranah.usecase.BuatItemOutboxSinkronisasiUseCase
+import id.primaraya.qcontrol.ranah.usecase.BacaRingkasanOutboxSinkronisasiUseCase
+import id.primaraya.qcontrol.ranah.model.MetodeHttpSinkronisasi
 
 class PengelolaKeadaanAplikasi(
     private val periksaKesehatanServerUseCase: PeriksaKesehatanServerUseCase,
     private val periksaDatabaseLokalUseCase: PeriksaDatabaseLokalUseCase,
     private val bacaKonfigurasiLokalUseCase: BacaKonfigurasiLokalUseCase,
+    private val buatItemOutboxSinkronisasiUseCase: BuatItemOutboxSinkronisasiUseCase,
+    private val bacaRingkasanOutboxSinkronisasiUseCase: BacaRingkasanOutboxSinkronisasiUseCase,
+    private val pengelolaSinkronisasi: PengelolaSinkronisasi,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
@@ -38,6 +44,85 @@ class PengelolaKeadaanAplikasi(
             }
             is AksiAplikasi.MuatKonfigurasiLokal -> {
                 muatKonfigurasiLokal()
+            }
+            is AksiAplikasi.MuatRingkasanOutboxSinkronisasi -> {
+                muatRingkasanOutbox()
+            }
+            is AksiAplikasi.BuatContohItemOutboxUntukPengujian -> {
+                buatContohOutbox()
+            }
+            is AksiAplikasi.SinkronkanOutboxSekarang -> {
+                sinkronkanSekarang()
+            }
+        }
+    }
+
+    private fun sinkronkanSekarang() {
+        lingkup.launch {
+            pengelolaSinkronisasi.sinkronkanSekarang()
+            muatRingkasanOutbox()
+        }
+    }
+
+    private fun muatRingkasanOutbox() {
+        _keadaan.update { 
+            it.copy(
+                statusRingkasanOutbox = StatusRingkasanOutbox.Memuat,
+                pesanRingkasanOutbox = "Memuat ringkasan outbox..."
+            ) 
+        }
+        
+        lingkup.launch {
+            when (val hasil = bacaRingkasanOutboxSinkronisasiUseCase()) {
+                is HasilOperasi.Berhasil -> {
+                    _keadaan.update { 
+                        it.copy(
+                            statusRingkasanOutbox = StatusRingkasanOutbox.Berhasil,
+                            ringkasanOutboxSinkronisasi = hasil.data,
+                            pesanRingkasanOutbox = null
+                        )
+                    }
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { 
+                        it.copy(
+                            statusRingkasanOutbox = StatusRingkasanOutbox.Gagal,
+                            pesanRingkasanOutbox = hasil.kesalahan.pesan
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun buatContohOutbox() {
+        lingkup.launch {
+            val payload = """
+                {
+                  "contoh": true,
+                  "sumber": "fase_1f"
+                }
+            """.trimIndent()
+            
+            val hasil = buatItemOutboxSinkronisasiUseCase(
+                jenisOperasi = "CONTOH_PENGUJIAN_OUTBOX",
+                endpointTujuan = "/api/v1/qcontrol/contoh",
+                metodeHttp = MetodeHttpSinkronisasi.POST,
+                payloadJson = payload
+            )
+            
+            when (hasil) {
+                is HasilOperasi.Berhasil -> {
+                    muatRingkasanOutbox()
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { 
+                        it.copy(
+                            statusRingkasanOutbox = StatusRingkasanOutbox.Gagal,
+                            pesanRingkasanOutbox = "Gagal membuat contoh: ${hasil.kesalahan.pesan}"
+                        )
+                    }
+                }
             }
         }
     }

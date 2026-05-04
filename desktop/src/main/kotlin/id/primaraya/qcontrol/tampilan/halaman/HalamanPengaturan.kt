@@ -12,7 +12,9 @@ import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tampilan.state.StatusKoneksiServer
+import id.primaraya.qcontrol.tampilan.state.StatusRingkasanOutbox
 import id.primaraya.qcontrol.tampilan.state.StatusPenyimpananLokal
+import id.primaraya.qcontrol.ranah.model.RingkasanOutboxSinkronisasi
 
 @Composable
 fun HalamanPengaturan(
@@ -121,5 +123,94 @@ fun HalamanPengaturan(
                 }
             }
         }
+
+        // Outbox Sinkronisasi
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Outbox Sinkronisasi",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val warnaStatusOutbox = when (keadaan.statusRingkasanOutbox) {
+                        StatusRingkasanOutbox.Berhasil -> MaterialTheme.colorScheme.primary
+                        StatusRingkasanOutbox.Memuat -> MaterialTheme.colorScheme.tertiary
+                        StatusRingkasanOutbox.Gagal -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.outline
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(warnaStatusOutbox, RoundedCornerShape(6.dp))
+                    )
+                    Text(text = keadaan.pesanRingkasanOutbox ?: "Status outbox siap.")
+                }
+
+                keadaan.ringkasanOutboxSinkronisasi?.let { r ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        RingkasanItem("Total Item", r.jumlahTotal.toString())
+                        RingkasanItem("Menunggu", r.jumlahMenunggu.toString())
+                        RingkasanItem("Sedang Dikirim", r.jumlahSedangDikirim.toString())
+                        RingkasanItem("Berhasil", r.jumlahBerhasil.toString(), MaterialTheme.colorScheme.primary)
+                        RingkasanItem("Gagal", r.jumlahGagal.toString(), MaterialTheme.colorScheme.error)
+                        RingkasanItem("Konflik", r.jumlahKonflik.toString(), MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { onAksi(AksiAplikasi.MuatRingkasanOutboxSinkronisasi) },
+                        enabled = keadaan.statusRingkasanOutbox != StatusRingkasanOutbox.Memuat
+                    ) {
+                        Text("Refresh")
+                    }
+
+                    Button(
+                        onClick = { onAksi(AksiAplikasi.SinkronkanOutboxSekarang) },
+                        enabled = keadaan.statusRingkasanOutbox != StatusRingkasanOutbox.Memuat
+                    ) {
+                        Text("Sinkronkan Sekarang")
+                    }
+                    
+                    OutlinedButton(
+                        onClick = { onAksi(AksiAplikasi.BuatContohItemOutboxUntukPengujian) },
+                        enabled = keadaan.statusRingkasanOutbox != StatusRingkasanOutbox.Memuat
+                    ) {
+                        Text("Tambah Test Item")
+                    }
+                }
+                Text(
+                    text = "Tombol contoh untuk pengujian fondasi offline-first.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RingkasanItem(
+    label: String,
+    nilai: String,
+    warnaNilai: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodySmall)
+        Text(text = nilai, style = MaterialTheme.typography.bodySmall, color = warnaNilai)
     }
 }

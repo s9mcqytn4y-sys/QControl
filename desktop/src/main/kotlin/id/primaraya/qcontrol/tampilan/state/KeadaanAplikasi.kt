@@ -6,6 +6,7 @@ import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
 
 import id.primaraya.qcontrol.ranah.model.InformasiDatabaseLokal
 import id.primaraya.qcontrol.ranah.model.KonfigurasiLokal
+import id.primaraya.qcontrol.ranah.model.RingkasanOutboxSinkronisasi
 
 data class KeadaanAplikasi(
     val ruteAktif: RuteAplikasi = RuteAplikasi.Dashboard,
@@ -17,10 +18,20 @@ data class KeadaanAplikasi(
     val statusDatabaseLokal: StatusPenyimpananLokal = StatusPenyimpananLokal.TidakDiperiksa,
     val pesanStatusDatabaseLokal: String? = null,
     val informasiDatabaseLokal: InformasiDatabaseLokal? = null,
+    val ringkasanOutboxSinkronisasi: RingkasanOutboxSinkronisasi? = null,
+    val statusRingkasanOutbox: StatusRingkasanOutbox = StatusRingkasanOutbox.TidakDimuat,
+    val pesanRingkasanOutbox: String? = null,
     val namaPengguna: String = "Wahyu",
     val peranPengguna: String = "QC Inspector",
     val lineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT
 )
+
+sealed class StatusRingkasanOutbox {
+    object TidakDimuat : StatusRingkasanOutbox()
+    object Memuat : StatusRingkasanOutbox()
+    object Berhasil : StatusRingkasanOutbox()
+    object Gagal : StatusRingkasanOutbox()
+}
 
 sealed class StatusKoneksiServer {
     object TidakDiperiksa : StatusKoneksiServer()

@@ -1,0 +1,15 @@
+package id.primaraya.qcontrol.ranah.model
+
+data class ItemOutboxSinkronisasi(
+    val id: String,
+    val jenisOperasi: String,
+    val endpointTujuan: String,
+    val metodeHttp: MetodeHttpSinkronisasi,
+    val payloadJson: String,
+    val idempotencyKey: String,
+    val status: StatusOutboxSinkronisasi,
+    val jumlahPercobaan: Int,
+    val pesanGagalTerakhir: String?,
+    val dibuatPada: String,
+    val diperbaruiPada: String
+)
