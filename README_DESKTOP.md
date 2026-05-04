@@ -1,4 +1,4 @@
-# QControl Desktop - Fase Fondasi & Arsitektur
+# QControl Desktop - Fase 2A-R2: Verifikasi Kontrak Outbox
 
 Dokumen ini menjelaskan struktur dan cara kerja aplikasi QControl versi Desktop.
 
@@ -28,46 +28,32 @@ Untuk membangun installer MSI (Windows):
 - `tema/`: Design system (warna, tipografi, ukuran).
 - `konfigurasi/`: Pengaturan global aplikasi.
 
-## State Management & Navigasi
-Aplikasi menggunakan pola **Unidirectional Data Flow (UDF)**:
-1.  **KeadaanAplikasi**: Data class yang menampung seluruh state UI.
-2.  **AksiAplikasi**: Sealed class yang mendefinisikan interaksi pengguna.
-3.  **PengelolaKeadaanAplikasi**: State holder yang mengelola perubahan state melalui Flow.
-
-## Batasan Fase Saat Ini (Fase 1F)
-- Fitur bisnis (Dashboard, Input, dll) masih berupa **placeholder**.
-- Sudah memiliki fondasi **Ktor Client** untuk koneksi ke PGNServer.
-- Fitur **Cek Kesehatan Server** sudah aktif di Header.
-- Sudah memiliki **SQLite Lokal** untuk persistensi offline-first.
-- Sudah memiliki **Skeleton Outbox Sinkronisasi** (Fase 1F).
-
-## Outbox Sinkronisasi & Idempotency Key
-Fitur ini adalah fondasi agar aplikasi tetap bisa bekerja saat offline.
-
-### Prinsip Kerja:
-1. Setiap aksi yang perlu dikirim ke server disimpan di tabel `outbox_sinkronisasi` lokal.
-2. Setiap item memiliki `idempotency_key` untuk mencegah duplikasi data di sisi server.
-3. Status Outbox: `MENUNGGU`, `SEDANG_DIKIRIM`, `BERHASIL`, `GAGAL`, `KONFLIK`.
-
-### Cara Menguji (Fase 1F):
-1. Jalankan aplikasi: `./gradlew :desktop:run`.
-2. Buka halaman **Pengaturan**.
-3. Klik tombol **Buat Contoh Item Outbox**.
-4. Klik tombol **Muat Ringkasan Outbox**.
-5. Pastikan jumlah **Menunggu** atau **Total Item** bertambah.
-
-*Catatan: Sinkronisasi otomatis ke server belum diaktifkan di fase ini.*
-
 ## Integrasi PGNServer (Backend)
-1. Jalankan PGNServer lokal (Laravel):
-   ```bash
-   ./vendor/bin/sail up -d
-   ```
-2. Pastikan API Kesehatan dapat diakses:
-   `GET http://localhost:8000/api/v1/kesehatan`
-3. Di QControl Desktop, klik tombol **Refresh** pada Header untuk memperbarui status koneksi.
+1. Jalankan PGNServer lokal (Laravel) melalui Docker Compose:
+   `docker compose up -d`
+2. Alamat Server: `http://127.0.0.1:8000`
+3. Health Check:
+   `GET http://127.0.0.1:8000/api/v1/kesehatan`
+4. Endpoint Kontrak Outbox:
+   `POST http://127.0.0.1:8000/api/v1/qcontrol/contoh`
 
-### Perilaku Koneksi:
-- **Hijau**: Tersambung ke PGNServer.
-- **Kuning**: Sedang memeriksa...
-- **Merah**: Terputus (Server mati atau URL salah).
+## Status Sinkronisasi Otomatis
+- **Default: OFF**. Sinkronisasi otomatis tidak berjalan saat aplikasi dibuka.
+- User dapat mengaktifkan secara manual melalui halaman **Pengaturan**.
+- User dapat memicu sinkronisasi manual kapan saja.
+
+## Cara Uji End-to-End (Fase 2A-R2)
+1. Pastikan PGNServer aktif.
+2. Jalankan QControl Desktop.
+3. Buka halaman **Pengaturan**.
+4. Klik **Periksa Koneksi Server** (Pastikan indikator menjadi Hijau).
+5. Klik **Buat Contoh Item Outbox**.
+6. Klik **Sinkronkan Sekarang**.
+7. Klik **Muat Ringkasan Outbox**.
+8. Pastikan jumlah **BERHASIL** bertambah dan item contoh terkirim.
+
+## Catatan Penting
+- Endpoint `/api/v1/qcontrol/contoh` adalah kontrak awal untuk verifikasi sistem outbox.
+- Belum ada fitur bisnis QC (Inspeksi, Defect, dll) di fase ini.
+- Autentikasi (Sanctum) belum diaktifkan.
+- Idempotency persistence sisi server masih dalam tahap pengembangan (Fase 2B).

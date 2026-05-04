@@ -77,9 +77,6 @@ fun AplikasiQControl() {
         pengelolaState.tangani(AksiAplikasi.PeriksaDatabaseLokal)
         pengelolaState.tangani(AksiAplikasi.PeriksaKoneksiServer)
         pengelolaState.tangani(AksiAplikasi.MuatRingkasanOutboxSinkronisasi)
-        
-        // Mulai sinkronisasi otomatis (interval dikonfigurasi di KonfigurasiSinkronisasi)
-        pengelolaSinkronisasi.mulaiSinkronisasiOtomatis()
     }
 
     TemaQControl {
