@@ -15,14 +15,29 @@ import kotlinx.serialization.SerializationException
 
 import id.primaraya.qcontrol.data.remote.dto.ProfilPenggunaDto
 
+import kotlinx.serialization.json.JsonElement
+
 class LayananAutentikasiRemote(private val klien: HttpClient) {
     
     suspend fun masukSesi(email: String, kataSandi: String): HasilOperasi<Autentikasi> {
         return try {
-            val respon: AmplopResponApiDto<ResponAutentikasiDto> = klien.post("/api/v1/login") {
+            val responHttp = klien.post("/api/v1/login") {
                 contentType(ContentType.Application.Json)
                 setBody(PermintaanLoginDto(email, kataSandi))
-            }.body()
+                header(HttpHeaders.Accept, "application/json")
+            }
+
+            // Tangani HTTP 401 Unauthorized secara eksplisit jika perlu
+            if (responHttp.status == HttpStatusCode.Unauthorized) {
+                return HasilOperasi.Gagal(
+                    KesalahanAplikasi.Server(
+                        pesan = "Email atau password tidak sesuai",
+                        kode = "AUTENTIKASI_GAGAL"
+                    )
+                )
+            }
+
+            val respon: AmplopResponApiDto<ResponAutentikasiDto> = responHttp.body()
 
             if (respon.berhasil && respon.data != null) {
                 HasilOperasi.Berhasil(
@@ -34,7 +49,13 @@ class LayananAutentikasiRemote(private val klien: HttpClient) {
                     )
                 )
             } else {
-                val pesanError = if (respon.kesalahan?.kode == "UNAUTHORIZED") "Email atau password tidak sesuai" else respon.pesan
+                // Mapping kode AUTENTIKASI_GAGAL dari PGNServer
+                val pesanError = if (respon.kesalahan?.kode == "AUTENTIKASI_GAGAL" || respon.kesalahan?.kode == "UNAUTHORIZED") {
+                    "Email atau password tidak sesuai"
+                } else {
+                    respon.pesan
+                }
+                
                 HasilOperasi.Gagal(
                     KesalahanAplikasi.Server(
                         pesan = pesanError,
@@ -43,7 +64,7 @@ class LayananAutentikasiRemote(private val klien: HttpClient) {
                 )
             }
         } catch (e: IOException) {
-            HasilOperasi.Gagal(KesalahanAplikasi.KoneksiServer("Gagal terhubung ke server: ${e.message}"))
+            HasilOperasi.Gagal(KesalahanAplikasi.KoneksiServer("Gagal terhubung ke server. Pastikan PGNServer aktif."))
         } catch (e: SerializationException) {
             HasilOperasi.Gagal(KesalahanAplikasi.ResponTidakValid("Format respon autentikasi tidak dikenali"))
         } catch (e: Exception) {
@@ -82,7 +103,8 @@ class LayananAutentikasiRemote(private val klien: HttpClient) {
 
     suspend fun keluarSesi(token: String): HasilOperasi<Unit> {
         return try {
-            val respon: AmplopResponApiDto<Unit> = klien.post("/api/v1/logout") {
+            // Gunakan JsonElement? karena logout PGNServer mengembalikan data: null
+            val respon: AmplopResponApiDto<JsonElement?> = klien.post("/api/v1/logout") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 header(HttpHeaders.Accept, "application/json")
             }.body()
@@ -93,7 +115,7 @@ class LayananAutentikasiRemote(private val klien: HttpClient) {
                 HasilOperasi.Gagal(KesalahanAplikasi.Server(respon.pesan))
             }
         } catch (e: Exception) {
-            // Logout remote gagal tidak apa-apa, yang penting lokal dihapus
+            // Logout remote gagal (misal token kadaluarsa), local logout tetap sukses
             HasilOperasi.Berhasil(Unit)
         }
     }

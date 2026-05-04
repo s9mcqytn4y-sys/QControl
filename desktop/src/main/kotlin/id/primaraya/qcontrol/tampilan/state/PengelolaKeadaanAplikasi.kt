@@ -321,6 +321,13 @@ class PengelolaKeadaanAplikasi(
             when (val hasil = ambilSesiAktifUseCase.eksekusi()) {
                 is HasilOperasi.Berhasil<*> -> {
                     val sesi = hasil.data as? Autentikasi
+                    
+                    // Validasi Role: Hanya HeadQC yang diizinkan di QControl Desktop
+                    if (sesi != null && sesi.peran != "HeadQC") {
+                        logout() // Paksa keluar jika role tidak valid
+                        return@launch
+                    }
+
                     _keadaan.update { it.copy(sesiAktif = sesi) }
                     pengelolaSinkronisasi.tokenAktif = sesi?.token
                 }
@@ -338,6 +345,19 @@ class PengelolaKeadaanAplikasi(
             when (val hasil = masukSesiUseCase.eksekusi(email, kataSandi)) {
                 is HasilOperasi.Berhasil<*> -> {
                     val sesi = hasil.data as Autentikasi
+                    
+                    // Validasi Role: QControl Desktop hanya untuk HeadQC
+                    if (sesi.peran != "HeadQC") {
+                        _keadaan.update { 
+                            it.copy(
+                                sedangLogin = false,
+                                pesanLogin = "Akses ditolak: Hanya HeadQC yang dapat masuk ke QControl Desktop."
+                            ) 
+                        }
+                        keluarSesiUseCase.eksekusi() // Bersihkan sesi yang mungkin sudah tersimpan
+                        return@launch
+                    }
+
                     _keadaan.update { 
                         it.copy(
                             sedangLogin = false,

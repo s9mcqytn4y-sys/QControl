@@ -145,9 +145,27 @@ class MigrasiDatabaseLokal(
     }
 
     private fun migrasiVersi3(koneksi: Connection) {
-        val sql = "ALTER TABLE sesi_autentikasi ADD COLUMN email TEXT"
+        val namaTabel = "sesi_autentikasi"
+        val namaKolom = "email"
+        
+        // Cek apakah kolom sudah ada (Idempotent Migration)
+        var kolomSudahAda = false
+        val sqlCek = "PRAGMA table_info($namaTabel)"
         koneksi.createStatement().use { statement ->
-            statement.execute(sql)
+            val resultSet = statement.executeQuery(sqlCek)
+            while (resultSet.next()) {
+                if (resultSet.getString("name") == namaKolom) {
+                    kolomSudahAda = true
+                    break
+                }
+            }
+        }
+
+        if (!kolomSudahAda) {
+            val sqlTambah = "ALTER TABLE $namaTabel ADD COLUMN $namaKolom TEXT"
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlTambah)
+            }
         }
     }
 }

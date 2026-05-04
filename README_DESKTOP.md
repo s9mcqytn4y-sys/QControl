@@ -1,4 +1,4 @@
-# QControl Desktop - Fase 2C-R2: Penyelarasan Auth Contract
+# QControl Desktop - Fase 2C-R3: Hardening Auth Client HeadQC
 
 Dokumen ini menjelaskan struktur dan cara kerja aplikasi QControl versi Desktop.
 
@@ -18,8 +18,9 @@ Pastikan JDK 17 terinstal, lalu jalankan perintah di root project:
 ## Kebijakan Autentikasi (Hanya HeadQC)
 Sesuai kontrak PGNServer Fase 2C, aplikasi ini hanya mengizinkan akses untuk peran **HeadQC**.
 - **Email Default**: `headqc@pgn.local`
-- **Password Default**: `password` (untuk lingkungan development)
+- **Password Default**: `HeadQC@12345` (untuk lingkungan development)
 - **Akses**: Penuh end-to-end.
+- **Server Default**: `http://127.0.0.1:8000`
 
 ## Cara Uji Autentikasi (Fase 2C-R2)
 1. Pastikan PGNServer aktif (menjalankan seeder `UserHeadQCSeeder`).
