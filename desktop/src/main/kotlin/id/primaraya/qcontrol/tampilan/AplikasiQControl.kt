@@ -1,6 +1,10 @@
 package id.primaraya.qcontrol.tampilan
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import id.primaraya.qcontrol.data.remote.http.buatKlienHttpAplikasi
 import id.primaraya.qcontrol.data.remote.layanan.LayananKesehatanServerRemote
 import id.primaraya.qcontrol.data.repositori.RepositoriKesehatanServer
@@ -26,6 +30,13 @@ import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxGagalUseCase
 import id.primaraya.qcontrol.ranah.usecase.TandaiOutboxKonflikUseCase
 import id.primaraya.qcontrol.ranah.usecase.BacaDaftarOutboxMenungguUseCase
 import id.primaraya.qcontrol.ranah.usecase.ResetOutboxSedangDikirimUseCase
+import id.primaraya.qcontrol.data.lokal.repositori.RepositoriAutentikasiLokal
+import id.primaraya.qcontrol.data.remote.layanan.LayananAutentikasiRemote
+import id.primaraya.qcontrol.ranah.usecase.MasukSesiUseCase
+import id.primaraya.qcontrol.ranah.usecase.KeluarSesiUseCase
+import id.primaraya.qcontrol.ranah.usecase.AmbilSesiAktifUseCase
+import id.primaraya.qcontrol.tampilan.halaman.HalamanLogin
+
 
 @Composable
 fun AplikasiQControl() {
@@ -56,6 +67,14 @@ fun AplikasiQControl() {
      val layananSinkronisasiRemote = remember { id.primaraya.qcontrol.data.remote.layanan.LayananSinkronisasiRemote(klienHttp) }
     val kirimItemOutboxUseCase = remember { id.primaraya.qcontrol.ranah.usecase.KirimItemOutboxUseCase(repositoriOutboxSinkronisasi, layananSinkronisasiRemote) }
     val resetOutboxSedangDikirimUseCase = remember { ResetOutboxSedangDikirimUseCase(repositoriOutboxSinkronisasi) }
+    val ujiUlangOutboxBerhasilTerakhirUseCase = remember { id.primaraya.qcontrol.ranah.usecase.UjiUlangOutboxBerhasilTerakhirUseCase(repositoriOutboxSinkronisasi, layananSinkronisasiRemote) }
+    
+    val repositoriAutentikasiLokal = remember { RepositoriAutentikasiLokal(koneksiDatabaseLokal) }
+    val layananAutentikasiRemote = remember { LayananAutentikasiRemote(klienHttp) }
+    val masukSesiUseCase = remember { MasukSesiUseCase(layananAutentikasiRemote, repositoriAutentikasiLokal) }
+    val keluarSesiUseCase = remember { KeluarSesiUseCase(repositoriAutentikasiLokal) }
+    val ambilSesiAktifUseCase = remember { AmbilSesiAktifUseCase(repositoriAutentikasiLokal) }
+
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
     val pengelolaState = remember { 
@@ -66,6 +85,10 @@ fun AplikasiQControl() {
             buatItemOutboxSinkronisasiUseCase,
             bacaRingkasanOutboxSinkronisasiUseCase,
             resetOutboxSedangDikirimUseCase,
+            ujiUlangOutboxBerhasilTerakhirUseCase,
+            masukSesiUseCase,
+            keluarSesiUseCase,
+            ambilSesiAktifUseCase,
             pengelolaSinkronisasi
         ) 
     }
@@ -75,17 +98,30 @@ fun AplikasiQControl() {
     LaunchedEffect(Unit) {
         pengelolaState.tangani(AksiAplikasi.MuatKonfigurasiLokal)
         pengelolaState.tangani(AksiAplikasi.PeriksaDatabaseLokal)
+        pengelolaState.tangani(AksiAplikasi.InisialisasiSesi)
         pengelolaState.tangani(AksiAplikasi.PeriksaKoneksiServer)
         pengelolaState.tangani(AksiAplikasi.MuatRingkasanOutboxSinkronisasi)
     }
 
     TemaQControl {
-        KerangkaAplikasi(
-            keadaan = keadaan,
-            onAksi = { aksi ->
-                pengelolaState.tangani(aksi)
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            if (keadaan.sesiAktif == null) {
+                HalamanLogin(
+                    keadaan = keadaan,
+                    onAksi = { aksi -> pengelolaState.tangani(aksi) }
+                )
+            } else {
+                KerangkaAplikasi(
+                    keadaan = keadaan,
+                    onAksi = { aksi ->
+                        pengelolaState.tangani(aksi)
+                    }
+                )
             }
-        )
+        }
     }
     
     // Pastikan menutup HTTP client saat aplikasi benar-benar hancur (bila perlu)

@@ -269,6 +269,34 @@ fun HalamanPengaturan(
                 ) {
                     Text("Tambah Test Item (Simulasi)")
                 }
+
+                if (keadaan.sedangMengujiUlangIdempotency || keadaan.pesanUjiUlangIdempotency != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = "Status Uji Idempotency:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                        Text(
+                            text = keadaan.pesanUjiUlangIdempotency ?: "Memulai...",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = { onAksi(AksiAplikasi.UjiUlangIdempotency) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !keadaan.sedangSinkronisasi && !keadaan.sedangMengujiUlangIdempotency,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text("Uji Ulang Idempotency (Duplicate Retry)")
+                }
             }
         }
     }

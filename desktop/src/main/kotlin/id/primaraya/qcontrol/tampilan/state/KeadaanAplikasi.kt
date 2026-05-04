@@ -27,7 +27,14 @@ data class KeadaanAplikasi(
     val sinkronisasiOtomatisAktif: Boolean = false,
     val sedangSinkronisasi: Boolean = false,
     val pesanSinkronisasiTerakhir: String? = null,
-    val waktuSinkronisasiTerakhir: String? = null
+    val waktuSinkronisasiTerakhir: String? = null,
+    val sedangMengujiUlangIdempotency: Boolean = false,
+    val pesanUjiUlangIdempotency: String? = null,
+    
+    // Autentikasi (Fase 2C)
+    val sesiAktif: id.primaraya.qcontrol.ranah.model.Autentikasi? = null,
+    val sedangLogin: Boolean = false,
+    val pesanLogin: String? = null
 )
 
 sealed class StatusRingkasanOutbox {

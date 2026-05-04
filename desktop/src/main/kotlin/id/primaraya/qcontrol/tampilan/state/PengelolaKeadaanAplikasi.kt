@@ -17,6 +17,11 @@ import id.primaraya.qcontrol.ranah.usecase.BuatItemOutboxSinkronisasiUseCase
 import id.primaraya.qcontrol.ranah.usecase.BacaRingkasanOutboxSinkronisasiUseCase
 import id.primaraya.qcontrol.ranah.usecase.ResetOutboxSedangDikirimUseCase
 import id.primaraya.qcontrol.ranah.model.MetodeHttpSinkronisasi
+import id.primaraya.qcontrol.ranah.usecase.MasukSesiUseCase
+import id.primaraya.qcontrol.ranah.usecase.KeluarSesiUseCase
+import id.primaraya.qcontrol.ranah.usecase.AmbilSesiAktifUseCase
+import id.primaraya.qcontrol.ranah.model.Autentikasi
+import id.primaraya.qcontrol.ranah.usecase.UjiUlangOutboxBerhasilTerakhirUseCase
 
 class PengelolaKeadaanAplikasi(
     private val periksaKesehatanServerUseCase: PeriksaKesehatanServerUseCase,
@@ -25,6 +30,10 @@ class PengelolaKeadaanAplikasi(
     private val buatItemOutboxSinkronisasiUseCase: BuatItemOutboxSinkronisasiUseCase,
     private val bacaRingkasanOutboxSinkronisasiUseCase: BacaRingkasanOutboxSinkronisasiUseCase,
     private val resetOutboxSedangDikirimUseCase: ResetOutboxSedangDikirimUseCase,
+    private val ujiUlangOutboxBerhasilTerakhirUseCase: UjiUlangOutboxBerhasilTerakhirUseCase,
+    private val masukSesiUseCase: MasukSesiUseCase,
+    private val keluarSesiUseCase: KeluarSesiUseCase,
+    private val ambilSesiAktifUseCase: AmbilSesiAktifUseCase,
     private val pengelolaSinkronisasi: PengelolaSinkronisasi,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
@@ -53,6 +62,12 @@ class PengelolaKeadaanAplikasi(
                 _keadaan.update { it.copy(sinkronisasiOtomatisAktif = aktif) }
             }
         }
+
+        // Muat data awal
+        muatKonfigurasiLokal()
+        periksaKoneksi()
+        muatRingkasanOutbox()
+        periksaSesiAktif()
     }
 
     fun tangani(aksi: AksiAplikasi) {
@@ -90,6 +105,48 @@ class PengelolaKeadaanAplikasi(
             is AksiAplikasi.NonaktifkanSinkronisasiOtomatis -> {
                 pengelolaSinkronisasi.hentikanSinkronisasiOtomatis()
             }
+            is AksiAplikasi.UjiUlangIdempotency -> {
+                ujiUlangIdempotency()
+            }
+            is AksiAplikasi.Login -> {
+                login(aksi.username, aksi.kataSandi)
+            }
+            is AksiAplikasi.Logout -> {
+                logout()
+            }
+            is AksiAplikasi.InisialisasiSesi -> {
+                periksaSesiAktif()
+            }
+        }
+    }
+
+    private fun ujiUlangIdempotency() {
+        _keadaan.update { 
+            it.copy(
+                sedangMengujiUlangIdempotency = true,
+                pesanUjiUlangIdempotency = "Mengirim ulang item sukses terakhir..."
+            ) 
+        }
+        
+        lingkup.launch {
+            when (val hasil = ujiUlangOutboxBerhasilTerakhirUseCase()) {
+                is HasilOperasi.Berhasil<*> -> {
+                    _keadaan.update { 
+                        it.copy(
+                            sedangMengujiUlangIdempotency = false,
+                            pesanUjiUlangIdempotency = "Respons Server: ${hasil.data as? String}"
+                        )
+                    }
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { 
+                        it.copy(
+                            sedangMengujiUlangIdempotency = false,
+                            pesanUjiUlangIdempotency = "Uji Gagal: ${hasil.kesalahan.pesan}"
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -119,11 +176,12 @@ class PengelolaKeadaanAplikasi(
         
         lingkup.launch {
             when (val hasil = bacaRingkasanOutboxSinkronisasiUseCase()) {
-                is HasilOperasi.Berhasil -> {
+                is HasilOperasi.Berhasil<*> -> {
+                    val ringkasan = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanOutboxSinkronisasi
                     _keadaan.update { 
                         it.copy(
                             statusRingkasanOutbox = StatusRingkasanOutbox.Berhasil,
-                            ringkasanOutboxSinkronisasi = hasil.data,
+                            ringkasanOutboxSinkronisasi = ringkasan,
                             pesanRingkasanOutbox = null
                         )
                     }
@@ -157,7 +215,7 @@ class PengelolaKeadaanAplikasi(
             )
             
             when (hasil) {
-                is HasilOperasi.Berhasil -> {
+                is HasilOperasi.Berhasil<*> -> {
                     muatRingkasanOutbox()
                 }
                 is HasilOperasi.Gagal -> {
@@ -175,10 +233,10 @@ class PengelolaKeadaanAplikasi(
     private fun muatKonfigurasiLokal() {
         lingkup.launch {
             when (val hasil = bacaKonfigurasiLokalUseCase()) {
-                is HasilOperasi.Berhasil -> {
+                is HasilOperasi.Berhasil<*> -> {
                     _keadaan.update { 
                         it.copy(
-                            konfigurasiLokal = hasil.data,
+                            konfigurasiLokal = hasil.data as id.primaraya.qcontrol.ranah.model.KonfigurasiLokal,
                             lineAktif = hasil.data.lineAktif,
                             namaPengguna = hasil.data.namaPenggunaTerakhir,
                             peranPengguna = hasil.data.peranPenggunaTerakhir
@@ -202,12 +260,13 @@ class PengelolaKeadaanAplikasi(
 
         lingkup.launch {
             when (val hasil = periksaDatabaseLokalUseCase()) {
-                is HasilOperasi.Berhasil -> {
+                is HasilOperasi.Berhasil<*> -> {
+                    val info = hasil.data as id.primaraya.qcontrol.ranah.model.InformasiDatabaseLokal
                     _keadaan.update {
                         it.copy(
                             statusDatabaseLokal = StatusPenyimpananLokal.Tersedia,
-                            informasiDatabaseLokal = hasil.data,
-                            pesanStatusDatabaseLokal = hasil.data.pesan
+                            informasiDatabaseLokal = info,
+                            pesanStatusDatabaseLokal = info.pesan
                         )
                     }
                 }
@@ -234,12 +293,13 @@ class PengelolaKeadaanAplikasi(
         
         lingkup.launch {
             when (val hasil = periksaKesehatanServerUseCase()) {
-                is HasilOperasi.Berhasil -> {
+                is HasilOperasi.Berhasil<*> -> {
+                    val status = hasil.data as id.primaraya.qcontrol.ranah.model.StatusKesehatanServer
                     _keadaan.update { 
                         it.copy(
                             statusKoneksi = StatusKoneksiServer.Tersambung,
-                            statusKesehatanServer = hasil.data,
-                            pesanStatusKoneksi = "Tersambung ke ${hasil.data.namaAplikasi}"
+                            statusKesehatanServer = status,
+                            pesanStatusKoneksi = "Tersambung ke ${status.namaAplikasi}"
                         )
                     }
                 }
@@ -253,6 +313,57 @@ class PengelolaKeadaanAplikasi(
                     }
                 }
             }
+        }
+    }
+
+    private fun periksaSesiAktif() {
+        lingkup.launch {
+            when (val hasil = ambilSesiAktifUseCase.eksekusi()) {
+                is HasilOperasi.Berhasil<*> -> {
+                    val sesi = hasil.data as? Autentikasi
+                    _keadaan.update { it.copy(sesiAktif = sesi) }
+                    pengelolaSinkronisasi.tokenAktif = sesi?.token
+                }
+                is HasilOperasi.Gagal -> {
+                    // Abaikan jika gagal baca lokal
+                }
+            }
+        }
+    }
+
+    private fun login(username: String, kataSandi: String) {
+        _keadaan.update { it.copy(sedangLogin = true, pesanLogin = "Sedang masuk...") }
+        
+        lingkup.launch {
+            when (val hasil = masukSesiUseCase.eksekusi(username, kataSandi)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    val sesi = hasil.data as Autentikasi
+                    _keadaan.update { 
+                        it.copy(
+                            sedangLogin = false,
+                            sesiAktif = sesi,
+                            pesanLogin = null
+                        ) 
+                    }
+                    pengelolaSinkronisasi.tokenAktif = sesi.token
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { 
+                        it.copy(
+                            sedangLogin = false,
+                            pesanLogin = hasil.kesalahan.pesan
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun logout() {
+        lingkup.launch {
+            keluarSesiUseCase.eksekusi()
+            _keadaan.update { it.copy(sesiAktif = null) }
+            pengelolaSinkronisasi.tokenAktif = null
         }
     }
 }

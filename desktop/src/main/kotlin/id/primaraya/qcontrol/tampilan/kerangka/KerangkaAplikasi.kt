@@ -16,7 +16,8 @@ fun KerangkaAplikasi(
     Row(modifier = Modifier.fillMaxSize()) {
         SidebarAplikasi(
             keadaan = keadaan,
-            onPilihRute = { onAksi(AksiAplikasi.PilihRute(it)) }
+            onPilihRute = { onAksi(AksiAplikasi.PilihRute(it)) },
+            onLogout = { onAksi(AksiAplikasi.Logout) }
         )
 
         Scaffold(

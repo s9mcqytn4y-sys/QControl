@@ -17,7 +17,10 @@ class MigrasiDatabaseLokal(
                 catatMigrasi(koneksi, 1, "inisialisasi_tabel_awal")
             }
             
-            // Tambahkan versi migrasi selanjutnya di sini jika diperlukan
+            if (versiSaatIni < 2) {
+                migrasiVersi2(koneksi)
+                catatMigrasi(koneksi, 2, "tambah_tabel_sesi_auth")
+            }
         }
     }
 
@@ -101,6 +104,31 @@ class MigrasiDatabaseLokal(
                 statement.execute(sqlKonfigurasi)
                 statement.execute(sqlCacheStatus)
                 statement.execute(sqlOutbox)
+            }
+            koneksi.commit()
+        } catch (e: Exception) {
+            koneksi.rollback()
+            throw e
+        } finally {
+            koneksi.autoCommit = true
+        }
+    }
+
+    private fun migrasiVersi2(koneksi: Connection) {
+        val sqlSesiAuth = """
+            CREATE TABLE IF NOT EXISTS sesi_autentikasi (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                token TEXT NOT NULL,
+                nama_pengguna TEXT NOT NULL,
+                peran TEXT NOT NULL,
+                dibuat_pada TEXT NOT NULL
+            )
+        """.trimIndent()
+
+        koneksi.autoCommit = false
+        try {
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlSesiAuth)
             }
             koneksi.commit()
         } catch (e: Exception) {

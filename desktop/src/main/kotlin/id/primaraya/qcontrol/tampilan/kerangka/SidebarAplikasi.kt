@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -25,7 +26,8 @@ import id.primaraya.qcontrol.tema.UkuranQControl
 @Composable
 fun SidebarAplikasi(
     keadaan: KeadaanAplikasi,
-    onPilihRute: (RuteAplikasi) -> Unit
+    onPilihRute: (RuteAplikasi) -> Unit,
+    onLogout: () -> Unit
 ) {
     NavigationRail(
         modifier = Modifier.width(UkuranQControl.LebarSidebar),
@@ -158,6 +160,32 @@ fun SidebarAplikasi(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+
+                Spacer(Modifier.height(UkuranQControl.SpasiSedang))
+
+                // Tombol Logout
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(UkuranQControl.RadiusBesar))
+                        .clickable(onClick = onLogout)
+                        .padding(UkuranQControl.SpasiSedang),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Keluar Sesi",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(UkuranQControl.SpasiSedang))
+                    Text(
+                        text = "Keluar Sesi",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }

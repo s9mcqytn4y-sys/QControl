@@ -24,7 +24,7 @@ class KirimItemOutboxUseCase(
      * 4. Jika Gagal dengan Konflik (409): Tandai 'KONFLIK' di lokal.
      * 5. Jika Gagal Lainnya: Tandai 'GAGAL' di lokal (akan dicoba ulang otomatis).
      */
-    suspend fun eksekusi(item: ItemOutboxSinkronisasi): HasilOperasi<Unit> {
+    suspend fun eksekusi(item: ItemOutboxSinkronisasi, token: String? = null): HasilOperasi<Unit> {
         // 1. Tandai sedang dikirim agar tidak diproses oleh worker lain jika ada paralelisme
         val hasilTandaiSedangDikirim = repositoriLokal.tandaiSedangDikirim(item.id)
         if (hasilTandaiSedangDikirim is HasilOperasi.Gagal) {
@@ -40,7 +40,8 @@ class KirimItemOutboxUseCase(
             endpoint = item.endpointTujuan,
             metode = item.metodeHttp,
             payloadJson = item.payloadJson,
-            idempotencyKey = item.idempotencyKey
+            idempotencyKey = item.idempotencyKey,
+            token = token
         )
         
         return when (hasilRemote) {

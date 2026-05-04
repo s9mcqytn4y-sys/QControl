@@ -191,6 +191,26 @@ class RepositoriOutboxSinkronisasi(
         }
     }
 
+    fun bacaBerhasilTerakhir(): HasilOperasi<ItemOutboxSinkronisasi?> {
+        return try {
+            migrasi.jalankanMigrasi()
+            var item: ItemOutboxSinkronisasi? = null
+            koneksi.bukaKoneksi().use { conn ->
+                val sql = "SELECT * FROM outbox_sinkronisasi WHERE status = 'BERHASIL' ORDER BY diperbarui_pada DESC LIMIT 1"
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery(sql).use { rs ->
+                        if (rs.next()) {
+                            item = rs.keItemOutboxSinkronisasi()
+                        }
+                    }
+                }
+            }
+            HasilOperasi.Berhasil(item)
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal membaca outbox berhasil terakhir: ${e.message}"))
+        }
+    }
+
     private fun perbaruiStatus(id: String, status: StatusOutboxSinkronisasi): HasilOperasi<Unit> {
         return try {
             koneksi.bukaKoneksi().use { conn ->

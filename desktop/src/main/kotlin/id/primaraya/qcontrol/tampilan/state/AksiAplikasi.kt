@@ -14,4 +14,10 @@ sealed class AksiAplikasi {
     object AktifkanSinkronisasiOtomatis : AksiAplikasi()
     object NonaktifkanSinkronisasiOtomatis : AksiAplikasi()
     object ResetOutboxSedangDikirim : AksiAplikasi()
+    object UjiUlangIdempotency : AksiAplikasi()
+    
+    // Autentikasi (Fase 2C)
+    data class Login(val username: String, val kataSandi: String) : AksiAplikasi()
+    object Logout : AksiAplikasi()
+    object InisialisasiSesi : AksiAplikasi()
 }

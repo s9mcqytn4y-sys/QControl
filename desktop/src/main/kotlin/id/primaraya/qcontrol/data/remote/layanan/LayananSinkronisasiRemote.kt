@@ -18,7 +18,8 @@ class LayananSinkronisasiRemote(private val klien: HttpClient) {
         endpoint: String,
         metode: MetodeHttpSinkronisasi,
         payloadJson: String,
-        idempotencyKey: String
+        idempotencyKey: String,
+        token: String? = null
     ): HasilOperasi<String> {
         return try {
             val respon = klien.request(endpoint) {
@@ -32,6 +33,9 @@ class LayananSinkronisasiRemote(private val klien: HttpClient) {
                 
                 header("X-Idempotency-Key", idempotencyKey)
                 header(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                if (token != null) {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
                 contentType(ContentType.Application.Json)
                 
                 if (metode != MetodeHttpSinkronisasi.GET) {

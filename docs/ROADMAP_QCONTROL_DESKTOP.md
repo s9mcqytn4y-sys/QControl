@@ -13,8 +13,8 @@ Dokumen ini merangkum rencana pengembangan QControl sebagai aplikasi Desktop (Wi
 ## Fase 2: Integrasi Backend & Kontrak Data (Sedang Berjalan)
 - [x] Fase 2A: Implementasi kontrak backend `qcontrol/contoh`.
 - [x] Fase 2A-R2: Verifikasi end-to-end QControl ke PGNServer (Sync manual).
-- [ ] Fase 2B: Idempotency persistence server-side di PGNServer.
-- [ ] Fase 2C: Autentikasi (Sanctum) pada Desktop Client.
+- [x] Fase 2B: Idempotency persistence server-side di PGNServer & Client.
+- [/] Fase 2C: Autentikasi (Sanctum) pada Desktop Client.
 - [ ] Fase 2D: Definisi Master Data minimal (Line, Shift, Jenis Defect).
 - [ ] Fase 2E: Mekanisme Pull Master Data ke Desktop.
 - [ ] Fase 2F: Caching Master Data lokal.

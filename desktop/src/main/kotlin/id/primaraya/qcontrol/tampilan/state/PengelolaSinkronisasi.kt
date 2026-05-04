@@ -33,6 +33,8 @@ class PengelolaSinkronisasi(
     private val _waktuSinkronisasiTerakhir = MutableStateFlow<String?>(null)
     val waktuSinkronisasiTerakhir: StateFlow<String?> = _waktuSinkronisasiTerakhir.asStateFlow()
 
+    var tokenAktif: String? = null
+
     private var jobSinkronisasi: Job? = null
     private val formatWaktu = DateTimeFormatter.ofPattern("HH:mm:ss")
         .withZone(ZoneId.systemDefault())
@@ -88,7 +90,7 @@ class PengelolaSinkronisasi(
                     var gagal = 0
                     
                     for (item in daftar) {
-                        val hasilKirim = kirimItemOutbox.eksekusi(item)
+                        val hasilKirim = kirimItemOutbox.eksekusi(item, tokenAktif)
                         if (hasilKirim is HasilOperasi.Berhasil) berhasil++ else gagal++
                         
                         // Jeda kecil antar pengiriman
