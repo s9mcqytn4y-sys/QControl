@@ -109,7 +109,7 @@ class PengelolaKeadaanAplikasi(
                 ujiUlangIdempotency()
             }
             is AksiAplikasi.Login -> {
-                login(aksi.username, aksi.kataSandi)
+                login(aksi.email, aksi.kataSandi)
             }
             is AksiAplikasi.Logout -> {
                 logout()
@@ -331,11 +331,11 @@ class PengelolaKeadaanAplikasi(
         }
     }
 
-    private fun login(username: String, kataSandi: String) {
+    private fun login(email: String, kataSandi: String) {
         _keadaan.update { it.copy(sedangLogin = true, pesanLogin = "Sedang masuk...") }
         
         lingkup.launch {
-            when (val hasil = masukSesiUseCase.eksekusi(username, kataSandi)) {
+            when (val hasil = masukSesiUseCase.eksekusi(email, kataSandi)) {
                 is HasilOperasi.Berhasil<*> -> {
                     val sesi = hasil.data as Autentikasi
                     _keadaan.update { 

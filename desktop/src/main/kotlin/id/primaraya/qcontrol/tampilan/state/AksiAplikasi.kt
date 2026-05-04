@@ -17,7 +17,7 @@ sealed class AksiAplikasi {
     object UjiUlangIdempotency : AksiAplikasi()
     
     // Autentikasi (Fase 2C)
-    data class Login(val username: String, val kataSandi: String) : AksiAplikasi()
+    data class Login(val email: String, val kataSandi: String) : AksiAplikasi()
     object Logout : AksiAplikasi()
     object InisialisasiSesi : AksiAplikasi()
 }

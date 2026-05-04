@@ -20,7 +20,7 @@ fun HalamanLogin(
     keadaan: KeadaanAplikasi,
     onAksi: (AksiAplikasi) -> Unit
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     
     Box(
@@ -52,7 +52,7 @@ fun HalamanLogin(
                 )
                 
                 Text(
-                    text = "Silakan masuk ke sistem",
+                    text = "Hanya akses HeadQC yang diizinkan",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -60,11 +60,12 @@ fun HalamanLogin(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text("Nama Pengguna") },
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email HeadQC") },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Person, null) },
+                    leadingIcon = { Icon(Icons.Default.Email, null) },
+                    placeholder = { Text("headqc@pgn.local") },
                     singleLine = true,
                     enabled = !keadaan.sedangLogin
                 )
@@ -94,10 +95,10 @@ fun HalamanLogin(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
-                    onClick = { onAksi(AksiAplikasi.Login(username, password)) },
+                    onClick = { onAksi(AksiAplikasi.Login(email, password)) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = username.isNotBlank() && password.isNotBlank() && !keadaan.sedangLogin
+                    enabled = email.isNotBlank() && password.isNotBlank() && !keadaan.sedangLogin
                 ) {
                     if (keadaan.sedangLogin) {
                         CircularProgressIndicator(

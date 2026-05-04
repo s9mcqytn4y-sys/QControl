@@ -1,4 +1,4 @@
-# QControl Desktop - Fase 2A-R2: Verifikasi Kontrak Outbox
+# QControl Desktop - Fase 2C-R2: Penyelarasan Auth Contract
 
 Dokumen ini menjelaskan struktur dan cara kerja aplikasi QControl versi Desktop.
 
@@ -15,45 +15,19 @@ Pastikan JDK 17 terinstal, lalu jalankan perintah di root project:
 ./gradlew :desktop:run
 ```
 
-Untuk membangun installer MSI (Windows):
-```bash
-./gradlew :desktop:packageMsi
-```
+## Kebijakan Autentikasi (Hanya HeadQC)
+Sesuai kontrak PGNServer Fase 2C, aplikasi ini hanya mengizinkan akses untuk peran **HeadQC**.
+- **Email Default**: `headqc@pgn.local`
+- **Password Default**: `password` (untuk lingkungan development)
+- **Akses**: Penuh end-to-end.
 
-## Struktur Folder Utama
-- `inti/`: Logika dasar aplikasi (hasil, kesalahan, dsb).
-- `ranah/`: Domain layer (model bisnis dan use case).
-- `data/`: Data layer (repository, lokal, remote).
-- `tampilan/`: Presentation layer (UI, state, navigasi).
-- `tema/`: Design system (warna, tipografi, ukuran).
-- `konfigurasi/`: Pengaturan global aplikasi.
-
-## Integrasi PGNServer (Backend)
-1. Jalankan PGNServer lokal (Laravel) melalui Docker Compose:
-   `docker compose up -d`
-2. Alamat Server: `http://127.0.0.1:8000`
-3. Health Check:
-   `GET http://127.0.0.1:8000/api/v1/kesehatan`
-4. Endpoint Kontrak Outbox:
-   `POST http://127.0.0.1:8000/api/v1/qcontrol/contoh`
-
-## Status Sinkronisasi Otomatis
-- **Default: OFF**. Sinkronisasi otomatis tidak berjalan saat aplikasi dibuka.
-- User dapat mengaktifkan secara manual melalui halaman **Pengaturan**.
-- User dapat memicu sinkronisasi manual kapan saja.
-
-## Cara Uji End-to-End (Fase 2A-R2)
-1. Pastikan PGNServer aktif.
-2. Jalankan QControl Desktop.
-3. Buka halaman **Pengaturan**.
-4. Klik **Periksa Koneksi Server** (Pastikan indikator menjadi Hijau).
-5. Klik **Buat Contoh Item Outbox**.
-6. Klik **Sinkronkan Sekarang**.
-7. Klik **Muat Ringkasan Outbox**.
-8. Pastikan jumlah **BERHASIL** bertambah dan item contoh terkirim.
+## Cara Uji Autentikasi (Fase 2C-R2)
+1. Pastikan PGNServer aktif (menjalankan seeder `UserHeadQCSeeder`).
+2. Masukkan email `headqc@pgn.local` dan password `password` pada halaman Login.
+3. Jika berhasil, token Sanctum akan disimpan di database lokal (`sesi_autentikasi`).
+4. Sesi akan bertahan meskipun aplikasi ditutup (Persistent Session).
 
 ## Catatan Penting
-- Endpoint `/api/v1/qcontrol/contoh` adalah kontrak awal untuk verifikasi sistem outbox.
-- Belum ada fitur bisnis QC (Inspeksi, Defect, dll) di fase ini.
-- Autentikasi (Sanctum) belum diaktifkan.
-- Idempotency persistence sisi server masih dalam tahap pengembangan (Fase 2B).
+- **Role Lock**: Hanya role `HeadQC` yang dapat login dan disimpan sesi lokalnya.
+- **Persistent Token**: Token dikirim di setiap request sinkronisasi melalui header `Authorization: Bearer`.
+- **Database**: Skema lokal telah ditingkatkan ke Versi 3 untuk mendukung kolom `email`.

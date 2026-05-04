@@ -21,6 +21,11 @@ class MigrasiDatabaseLokal(
                 migrasiVersi2(koneksi)
                 catatMigrasi(koneksi, 2, "tambah_tabel_sesi_auth")
             }
+
+            if (versiSaatIni < 3) {
+                migrasiVersi3(koneksi)
+                catatMigrasi(koneksi, 3, "tambah_kolom_email_sesi_auth")
+            }
         }
     }
 
@@ -136,6 +141,13 @@ class MigrasiDatabaseLokal(
             throw e
         } finally {
             koneksi.autoCommit = true
+        }
+    }
+
+    private fun migrasiVersi3(koneksi: Connection) {
+        val sql = "ALTER TABLE sesi_autentikasi ADD COLUMN email TEXT"
+        koneksi.createStatement().use { statement ->
+            statement.execute(sql)
         }
     }
 }

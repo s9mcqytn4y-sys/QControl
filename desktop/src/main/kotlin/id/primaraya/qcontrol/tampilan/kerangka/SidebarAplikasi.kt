@@ -135,8 +135,9 @@ fun SidebarAplikasi(
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Box(contentAlignment = Alignment.Center) {
+                            val inisial = (keadaan.sesiAktif?.namaPengguna ?: keadaan.namaPengguna).take(1)
                             Text(
-                                text = keadaan.namaPengguna.take(1),
+                                text = inisial,
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -145,13 +146,13 @@ fun SidebarAplikasi(
                     Spacer(Modifier.width(UkuranQControl.SpasiSedang))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = keadaan.namaPengguna,
+                            text = keadaan.sesiAktif?.namaPengguna ?: keadaan.namaPengguna,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = keadaan.peranPengguna,
+                            text = keadaan.sesiAktif?.peran ?: keadaan.peranPengguna,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )

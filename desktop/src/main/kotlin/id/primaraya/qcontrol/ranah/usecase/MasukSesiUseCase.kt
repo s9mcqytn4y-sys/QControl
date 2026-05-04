@@ -9,8 +9,8 @@ class MasukSesiUseCase(
     private val layananRemote: LayananAutentikasiRemote,
     private val repositoriLokal: RepositoriAutentikasiLokal
 ) {
-    suspend fun eksekusi(username: String, password: String): HasilOperasi<Autentikasi> {
-        val hasilRemote = layananRemote.login(username, password)
+    suspend fun eksekusi(email: String, kataSandi: String): HasilOperasi<Autentikasi> {
+        val hasilRemote = layananRemote.masukSesi(email, kataSandi)
         if (hasilRemote is HasilOperasi.Berhasil) {
             val simpanHasil = repositoriLokal.simpanSesi(hasilRemote.data)
             if (simpanHasil is HasilOperasi.Gagal) {

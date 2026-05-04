@@ -8,6 +8,8 @@ import id.primaraya.qcontrol.ranah.model.InformasiDatabaseLokal
 import id.primaraya.qcontrol.ranah.model.KonfigurasiLokal
 import id.primaraya.qcontrol.ranah.model.RingkasanOutboxSinkronisasi
 
+import id.primaraya.qcontrol.konfigurasi.KonfigurasiPeran
+
 data class KeadaanAplikasi(
     val ruteAktif: RuteAplikasi = RuteAplikasi.Dashboard,
     val daftarRute: List<RuteAplikasi> = RuteAplikasi.dapatkanDaftarRute(),
@@ -22,7 +24,7 @@ data class KeadaanAplikasi(
     val statusRingkasanOutbox: StatusRingkasanOutbox = StatusRingkasanOutbox.TidakDimuat,
     val pesanRingkasanOutbox: String? = null,
     val namaPengguna: String = "Wahyu",
-    val peranPengguna: String = "QC Inspector",
+    val peranPengguna: String = KonfigurasiPeran.HEAD_QC,
     val lineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT,
     val sinkronisasiOtomatisAktif: Boolean = false,
     val sedangSinkronisasi: Boolean = false,
