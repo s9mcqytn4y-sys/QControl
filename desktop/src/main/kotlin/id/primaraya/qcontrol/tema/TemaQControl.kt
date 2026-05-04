@@ -5,19 +5,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val SolarYellow = Color(0xFFFFD700)
-val VibrantOrange = Color(0xFFFF8C00)
-val DeepAmber = Color(0xFFFF4500)
-
 private val SkemaWarnaTerang = lightColorScheme(
     primary = DeepAmber,
     onPrimary = Color.White,
     primaryContainer = SolarYellow,
-    onPrimaryContainer = Color.Black,
+    onPrimaryContainer = TeksGelap,
     secondary = VibrantOrange,
     onSecondary = Color.White,
+    background = LatarBelakangKonten,
     surface = Color.White,
-    onSurface = Color.Black
+    onSurface = TeksGelap,
+    surfaceVariant = LatarBelakangSidebar,
+    onSurfaceVariant = TeksTerang
 )
 
 @Composable
@@ -26,11 +25,12 @@ fun TemaQControl(
     konten: @Composable () -> Unit
 ) {
     val skemaWarna = if (temaGelap) {
-        // Sementara pakai skema terang dulu atau sesuaikan nanti
         darkColorScheme(
             primary = SolarYellow,
             secondary = VibrantOrange,
-            tertiary = DeepAmber
+            tertiary = DeepAmber,
+            background = TeksGelap,
+            surface = LatarBelakangSidebar
         )
     } else {
         SkemaWarnaTerang
@@ -38,7 +38,7 @@ fun TemaQControl(
 
     MaterialTheme(
         colorScheme = skemaWarna,
-        typography = Typography(),
+        typography = TipografiQControl,
         content = konten
     )
 }

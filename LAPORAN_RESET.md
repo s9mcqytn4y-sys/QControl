@@ -5,6 +5,11 @@
 2.  **Modul Baru `:desktop`**: Fondasi bersih menggunakan Compose Multiplatform untuk Windows.
 3.  **Teknologi**: Kotlin 2.1.0, JDK 17, Compose Multiplatform 1.7.3.
 4.  **UI Shell**: Sidebar navigasi, Header, dan tema warna brand (Yellow/Orange/Amber).
+5.  **Refactoring Arsitektur (Fase 1C)**: 
+    *   Pemisahan komponen UI (Sidebar, Header, Konten).
+    *   Implementasi Unidirectional Data Flow dengan `StateFlow`.
+    *   Struktur package yang mendukung Clean Architecture.
+    *   Sentralisasi Design Token (Warna, Tipografi, Ukuran).
 
 ## Cara Menjalankan Aplikasi (Running)
 Pastikan Anda memiliki JDK 17 terinstal di sistem Anda.
