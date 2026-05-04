@@ -16,9 +16,10 @@ Dokumen ini merangkum rencana pengembangan QControl sebagai aplikasi Desktop (Wi
 - [x] Fase 2B: Idempotency persistence server-side di PGNServer & Client.
 - [x] Fase 2C: Autentikasi (Sanctum) & Penyelarasan Kontrak (Fase 2C-R2).
 - [x] Fase 2C-R3: Hardening Auth Client HeadQC (Idempotent Migration, Error Mapping, Role Enforcement).
-- [ ] Fase 2D: Definisi Master Data minimal (Line, Shift, Jenis Defect).
-- [ ] Fase 2E: Mekanisme Pull Master Data ke Desktop.
-- [ ] Fase 2F: Caching Master Data lokal.
+- [x] Fase 2D-R2: Implementasi Master Data Pull & Local Cache SQLite.
+- [x] Fase 2D-R2-R1: Validasi runtime dan polesan UI read-only Master Data.
+- [ ] Fase 2D-R3: Siapkan komponen pemilih Part dan Jenis Defect untuk Input Harian.
+- [ ] Fase 2E: Mekanisme Transaksi Pemeriksaan Harian.
 
 ## Fase 3: Fitur Bisnis Utama
 - [ ] Implementasi Dashboard Utama (Rasio NG, Total Inspeksi).

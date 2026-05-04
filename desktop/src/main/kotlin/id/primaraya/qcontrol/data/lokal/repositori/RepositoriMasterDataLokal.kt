@@ -230,7 +230,7 @@ class RepositoriMasterDataLokal(
                 val sql = if (kataKunci.isBlank()) {
                     "SELECT * FROM master_part ORDER BY nama_part"
                 } else {
-                    "SELECT * FROM master_part WHERE nama_part LIKE ? OR kode_unik_part LIKE ? ORDER BY nama_part"
+                    "SELECT * FROM master_part WHERE nama_part LIKE ? OR kode_unik_part LIKE ? OR nomor_part LIKE ? OR nama_material LIKE ? OR kode_proyek LIKE ? ORDER BY nama_part"
                 }
                 val daftar = mutableListOf<Part>()
                 koneksi.prepareStatement(sql).use { ps ->
@@ -238,6 +238,9 @@ class RepositoriMasterDataLokal(
                         val pola = "%$kataKunci%"
                         ps.setString(1, pola)
                         ps.setString(2, pola)
+                        ps.setString(3, pola)
+                        ps.setString(4, pola)
+                        ps.setString(5, pola)
                     }
                     val rs = ps.executeQuery()
                     while (rs.next()) {
@@ -251,7 +254,9 @@ class RepositoriMasterDataLokal(
                                 kodeMaterial = rs.getString("kode_material"),
                                 namaMaterial = rs.getString("nama_material"),
                                 kodeProyek = rs.getString("kode_proyek"),
-                                jumlahItemPerKanban = rs.getObject("jumlah_item_per_kanban") as? Int,
+                                jumlahItemPerKanban = rs.getObject("jumlah_item_per_kanban")?.let {
+                                    if (it is Number) it.toInt() else it.toString().toIntOrNull()
+                                },
                                 lineDefaultId = rs.getString("line_default_id"),
                                 kodeLineDefault = rs.getString("kode_line_default"),
                                 namaLineDefault = rs.getString("nama_line_default"),

@@ -18,10 +18,14 @@ class LayananMasterDataRemote(
     private val httpClient: HttpClient
 ) {
     suspend fun tarikMasterData(token: String): HasilOperasi<MasterDataQControl> {
+        if (token.isBlank()) {
+            return HasilOperasi.Gagal(KesalahanAplikasi.Server("Sesi HeadQC tidak tersedia"))
+        }
+
         return try {
             val response = httpClient.get("/api/v1/qcontrol/master-data") {
                 header(HttpHeaders.Accept, "application/json")
-                header(HttpHeaders.Authorization, "Bearer \$token")
+                header(HttpHeaders.Authorization, "Bearer $token")
             }
 
             if (response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden) {
@@ -30,7 +34,11 @@ class LayananMasterDataRemote(
 
             val body = response.body<AmplopResponApiDto<MasterDataQControlDto>>()
             
-            if (body.berhasil && body.data != null && body.metadata != null) {
+            if (!body.berhasil) {
+                return HasilOperasi.Gagal(KesalahanAplikasi.Server(body.pesan ?: "Gagal menarik master data dari server"))
+            }
+            
+            if (body.data != null && body.metadata != null) {
                 val jsonParser = Json { ignoreUnknownKeys = true }
                 val metadataObj = jsonParser.decodeFromJsonElement<MetadataMasterDataDto>(body.metadata)
                 
@@ -40,7 +48,7 @@ class LayananMasterDataRemote(
                 HasilOperasi.Gagal(KesalahanAplikasi.ResponTidakValid("Format respon master data tidak sesuai"))
             }
         } catch (e: Exception) {
-            HasilOperasi.Gagal(KesalahanAplikasi.KoneksiServer(e.message ?: "Gagal terhubung ke server saat menarik master data"))
+            HasilOperasi.Gagal(KesalahanAplikasi.KoneksiServer("Gagal terhubung ke server saat menarik master data"))
         }
     }
 }

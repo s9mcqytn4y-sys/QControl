@@ -62,8 +62,12 @@ fun HalamanMasterData(
         // ── Pesan status (tarik / error) ─────────────────────────────────────
         keadaan.pesanMasterData?.let { pesan ->
             val isError = pesan.startsWith("Sesi") || pesan.startsWith("Gagal") || pesan.contains("error", ignoreCase = true)
-            val warnaTeks = if (isError) MaterialTheme.colorScheme.error else Color(0xFF16A34A)
+            val isLoading = pesan.contains("Menarik", ignoreCase = true) || pesan.contains("Memuat", ignoreCase = true)
+            val warnaTeks = if (isError) MaterialTheme.colorScheme.error 
+                            else if (isLoading) Color(0xFFB45309) 
+                            else Color(0xFF16A34A)
             val warnaLatar = if (isError) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                             else if (isLoading) Color(0xFFFEF3C7) 
                              else Color(0xFFDCFCE7)
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -85,12 +89,12 @@ fun HalamanMasterData(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 when (keadaan.tabMasterDataAktif) {
-                    TabMasterData.RINGKASAN -> TabRingkasan(keadaan)
-                    TabMasterData.PART -> TabDaftarPart(keadaan.daftarPartMaster)
-                    TabMasterData.JENIS_DEFECT -> TabDaftarJenisDefect(keadaan.daftarJenisDefectMaster)
-                    TabMasterData.MATERIAL -> TabDaftarMaterial(keadaan.daftarMaterialMaster)
-                    TabMasterData.SLOT_WAKTU -> TabDaftarSlotWaktu(keadaan.daftarSlotWaktuMaster)
-                    TabMasterData.LINE_PRODUKSI -> TabDaftarLineProduksi(keadaan.daftarLineProduksiMaster)
+                    TabMasterData.RINGKASAN -> TabRingkasan(keadaan, onAksi)
+                    TabMasterData.PART -> TabDaftarPart(keadaan.daftarPartMaster, onAksi)
+                    TabMasterData.JENIS_DEFECT -> TabDaftarJenisDefect(keadaan.daftarJenisDefectMaster, onAksi)
+                    TabMasterData.MATERIAL -> TabDaftarMaterial(keadaan.daftarMaterialMaster, onAksi)
+                    TabMasterData.SLOT_WAKTU -> TabDaftarSlotWaktu(keadaan.daftarSlotWaktuMaster, onAksi)
+                    TabMasterData.LINE_PRODUKSI -> TabDaftarLineProduksi(keadaan.daftarLineProduksiMaster, onAksi)
                 }
             }
         }
@@ -107,12 +111,25 @@ private fun BagianHeader(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column {
-            Text(
-                text = "Master Data Referensi",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Master Data Referensi",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "Read-only dari PGNServer",
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             keadaan.ringkasanMasterData?.let { r ->
                 Text(
                     text = "Terakhir diperbarui: ${r.ditarikPada}",
@@ -126,21 +143,31 @@ private fun BagianHeader(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
             )
         }
 
-        Button(
-            onClick = { onAksi(AksiAplikasi.TarikMasterDataDariServer) },
-            enabled = !keadaan.sedangMenarikMasterData,
-            colors = ButtonDefaults.buttonColors(containerColor = DeepAmber)
-        ) {
-            if (keadaan.sedangMenarikMasterData) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = Color.White
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Menarik…")
-            } else {
-                Text("↓  Tarik dari Server")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { onAksi(AksiAplikasi.MuatMasterDataLokal) },
+                enabled = !keadaan.sedangMenarikMasterData,
+                colors = ButtonDefaults.outlinedButtonColors(),
+                border = ButtonDefaults.outlinedButtonBorder
+            ) {
+                Text("Muat Data Lokal")
+            }
+            Button(
+                onClick = { onAksi(AksiAplikasi.TarikMasterDataDariServer) },
+                enabled = !keadaan.sedangMenarikMasterData,
+                colors = ButtonDefaults.buttonColors(containerColor = DeepAmber)
+            ) {
+                if (keadaan.sedangMenarikMasterData) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Menarik…")
+                } else {
+                    Text("↓  Tarik dari Server")
+                }
             }
         }
     }
@@ -178,14 +205,15 @@ private fun BagianTabMasterData(tabAktif: TabMasterData, onAksi: (AksiAplikasi) 
 // Tab: Ringkasan
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabRingkasan(keadaan: KeadaanAplikasi) {
+private fun TabRingkasan(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Unit) {
     val ringkasan = keadaan.ringkasanMasterData
 
     if (ringkasan == null) {
         KosongState(
             ikon = "📂",
-            judul = "Belum Ada Master Data",
-            pesan = "Tekan tombol \"Tarik dari Server\" untuk mengunduh\nmaster data referensi dari PGNServer."
+            judul = "Master data belum tersedia",
+            pesan = "Tarik master data dari PGNServer agar QControl siap digunakan offline.",
+            onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }
         )
         return
     }
@@ -255,42 +283,49 @@ private fun BarisMeta(kunci: String, nilai: String) {
 // Tab: Part
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabDaftarPart(daftar: List<Part>) {
-    if (daftar.isEmpty()) { KosongState("🔩", "Tidak Ada Part", "Tarik master data atau coba kata kunci lain."); return }
-    val kolom = listOf("Kode Part" to 0.25f, "Nama Part" to 0.45f, "Kode Material" to 0.3f)
-    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeUnikPart, it.namaPart, it.kodeMaterial ?: "-") })
+private fun TabDaftarPart(daftar: List<Part>, onAksi: (AksiAplikasi) -> Unit) {
+    if (daftar.isEmpty()) { KosongState("🔩", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    val kolom = listOf(
+        "Kode Unik" to 0.15f, 
+        "Nama Part" to 0.25f, 
+        "Nomor Part" to 0.15f, 
+        "Material" to 0.2f, 
+        "Proyek" to 0.1f, 
+        "Line" to 0.15f
+    )
+    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeUnikPart, it.namaPart, it.nomorPart ?: "-", it.namaMaterial ?: "-", it.kodeProyek ?: "-", it.namaLineDefault ?: "-") })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab: Jenis Defect
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabDaftarJenisDefect(daftar: List<JenisDefect>) {
-    if (daftar.isEmpty()) { KosongState("⚠️", "Tidak Ada Jenis Defect", "Tarik master data atau coba kata kunci lain."); return }
-    val kolom = listOf("Kode Defect" to 0.25f, "Nama Defect" to 0.45f, "Kategori" to 0.3f)
-    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeDefect, it.namaDefect, it.namaKategori ?: "-") })
+private fun TabDaftarJenisDefect(daftar: List<JenisDefect>, onAksi: (AksiAplikasi) -> Unit) {
+    if (daftar.isEmpty()) { KosongState("⚠️", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    val kolom = listOf("Kode Defect" to 0.2f, "Nama Defect" to 0.4f, "Kategori" to 0.3f, "Status" to 0.1f)
+    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeDefect, it.namaDefect, it.namaKategori ?: "-", if (it.aktif) "Aktif" else "Nonaktif") })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab: Material
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabDaftarMaterial(daftar: List<Material>) {
-    if (daftar.isEmpty()) { KosongState("🏭", "Tidak Ada Material", "Tarik master data atau coba kata kunci lain."); return }
-    val kolom = listOf("Kode Material" to 0.35f, "Nama Material" to 0.65f)
-    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeMaterial ?: "-", it.namaMaterial) })
+private fun TabDaftarMaterial(daftar: List<Material>, onAksi: (AksiAplikasi) -> Unit) {
+    if (daftar.isEmpty()) { KosongState("🏭", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    val kolom = listOf("Kode Material" to 0.2f, "Nama Material" to 0.6f, "Status" to 0.2f)
+    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeMaterial ?: "-", it.namaMaterial, if (it.aktif) "Aktif" else "Nonaktif") })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab: Slot Waktu
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabDaftarSlotWaktu(daftar: List<SlotWaktu>) {
-    if (daftar.isEmpty()) { KosongState("🕐", "Tidak Ada Slot Waktu", "Tarik master data dari server."); return }
-    val kolom = listOf("Kode Slot" to 0.25f, "Label" to 0.35f, "Mulai" to 0.2f, "Selesai" to 0.2f)
+private fun TabDaftarSlotWaktu(daftar: List<SlotWaktu>, onAksi: (AksiAplikasi) -> Unit) {
+    if (daftar.isEmpty()) { KosongState("🕐", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    val kolom = listOf("Label Slot" to 0.3f, "Jam Mulai" to 0.2f, "Jam Selesai" to 0.2f, "Urutan" to 0.15f, "Status" to 0.15f)
     TabelMasterData(
         kolom = kolom,
-        baris = daftar.map { listOf(it.kodeSlot, it.labelSlot, it.jamMulai ?: "-", it.jamSelesai ?: "-") }
+        baris = daftar.map { listOf(it.labelSlot, it.jamMulai ?: "-", it.jamSelesai ?: "-", it.urutanTampil.toString(), if (it.aktif) "Aktif" else "Nonaktif") }
     )
 }
 
@@ -298,12 +333,12 @@ private fun TabDaftarSlotWaktu(daftar: List<SlotWaktu>) {
 // Tab: Line Produksi
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabDaftarLineProduksi(daftar: List<LineProduksi>) {
-    if (daftar.isEmpty()) { KosongState("🏗️", "Tidak Ada Line Produksi", "Tarik master data dari server."); return }
-    val kolom = listOf("Kode Line" to 0.25f, "Nama Line" to 0.75f)
+private fun TabDaftarLineProduksi(daftar: List<LineProduksi>, onAksi: (AksiAplikasi) -> Unit) {
+    if (daftar.isEmpty()) { KosongState("🏗️", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    val kolom = listOf("Kode Line" to 0.2f, "Nama Line" to 0.6f, "Status" to 0.2f)
     TabelMasterData(
         kolom = kolom,
-        baris = daftar.map { listOf(it.kodeLine, it.namaLine) }
+        baris = daftar.map { listOf(it.kodeLine, it.namaLine, if (it.aktif) "Aktif" else "Nonaktif") }
     )
 }
 
@@ -383,7 +418,7 @@ private fun TabelMasterData(
 // Komponen Generic: Empty State
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun KosongState(ikon: String, judul: String, pesan: String) {
+private fun KosongState(ikon: String, judul: String, pesan: String, onAksi: (() -> Unit)? = null) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -397,6 +432,15 @@ private fun KosongState(ikon: String, judul: String, pesan: String) {
                 color = TeksAbuAbu,
                 textAlign = TextAlign.Center
             )
+            if (onAksi != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onAksi,
+                    colors = ButtonDefaults.buttonColors(containerColor = SolarYellow, contentColor = Color.Black)
+                ) {
+                    Text("Tarik Master Data dari Server", fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }

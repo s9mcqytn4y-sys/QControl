@@ -24,9 +24,20 @@ Sesuai kontrak PGNServer Fase 2C, aplikasi ini hanya mengizinkan akses untuk per
 
 ## Cara Uji Autentikasi (Fase 2C-R2)
 1. Pastikan PGNServer aktif (menjalankan seeder `UserHeadQCSeeder`).
-2. Masukkan email `headqc@pgn.local` dan password `password` pada halaman Login.
+2. Masukkan email `headqc@pgn.local` dan password `HeadQC@12345` pada halaman Login.
 3. Jika berhasil, token Sanctum akan disimpan di database lokal (`sesi_autentikasi`).
 4. Sesi akan bertahan meskipun aplikasi ditutup (Persistent Session).
+
+## Cara Uji Validasi Runtime (Fase 2D-R2-R1)
+1. Login dengan kredensial HeadQC (seperti langkah di atas).
+2. Buka menu Master Data.
+3. Klik tombol "Tarik Master Data dari Server" (membutuhkan koneksi PGNServer).
+4. Pastikan ringkasan data tampil.
+5. Buka tab Part, coba fitur pencarian part.
+6. Tutup aplikasi.
+7. Buka ulang aplikasi, masuk ke Master Data.
+8. Klik "Muat Data Lokal".
+9. Pastikan data tetap utuh tanpa mengambil dari server (mode offline).
 
 ## Catatan Penting
 - **Role Lock**: Hanya role `HeadQC` yang dapat login dan disimpan sesi lokalnya.
