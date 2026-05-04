@@ -34,8 +34,22 @@ Aplikasi menggunakan pola **Unidirectional Data Flow (UDF)**:
 2.  **AksiAplikasi**: Sealed class yang mendefinisikan interaksi pengguna.
 3.  **PengelolaKeadaanAplikasi**: State holder yang mengelola perubahan state melalui Flow.
 
-## Batasan Fase Saat Ini (Fase 1C)
+## Batasan Fase Saat Ini (Fase 1C/1D)
 - Fitur bisnis (Dashboard, Input, dll) masih berupa **placeholder**.
-- Belum ada koneksi ke API PGNServer.
+- Sudah memiliki fondasi **Ktor Client** untuk koneksi ke PGNServer.
+- Fitur **Cek Kesehatan Server** sudah aktif di Header.
 - Belum ada database lokal SQLite.
-- Fokus utama adalah **kerangka arsitektur yang scalable**.
+
+## Integrasi PGNServer (Backend)
+1. Jalankan PGNServer lokal (Laravel):
+   ```bash
+   ./vendor/bin/sail up -d
+   ```
+2. Pastikan API Kesehatan dapat diakses:
+   `GET http://localhost:8000/api/v1/kesehatan`
+3. Di QControl Desktop, klik tombol **Refresh** pada Header untuk memperbarui status koneksi.
+
+### Perilaku Koneksi:
+- **Hijau**: Tersambung ke PGNServer.
+- **Kuning**: Sedang memeriksa...
+- **Merah**: Terputus (Server mati atau URL salah).
