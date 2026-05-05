@@ -65,7 +65,10 @@ data class KeadaanAplikasi(
     val ringkasanInputHarian: id.primaraya.qcontrol.ranah.model.RingkasanInputHarian? = null,
     val tanggalPemeriksaanHarian: String = java.time.LocalDate.now().toString(),
     val kataKunciPartInputHarian: String = "",
-    val pesanValidasiInputHarian: String? = null
+    val pesanValidasiInputHarian: String? = null,
+    val masterDataLokalTersedia: Boolean = false,
+    val sesiHeadQCTidakValid: Boolean = false,
+    val pesanKesiapanInputHarian: String? = null
 )
 
 sealed class StatusRingkasanOutbox {

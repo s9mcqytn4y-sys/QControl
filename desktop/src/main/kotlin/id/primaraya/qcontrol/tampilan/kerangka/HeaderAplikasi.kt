@@ -2,9 +2,7 @@ package id.primaraya.qcontrol.tampilan.kerangka
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,11 +37,24 @@ fun HeaderAplikasi(
             }
         },
         actions = {
-            // Status Koneksi
+            // Status Koneksi & Sesi
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = UkuranQControl.SpasiNormal)
             ) {
+                // Sesi HeadQC
+                if (keadaan.sesiHeadQCTidakValid) {
+                    Badge(containerColor = MaterialTheme.colorScheme.error) {
+                        Text("Sesi Berakhir", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                } else {
+                    Badge(containerColor = Color(0xFF10B981).copy(alpha = 0.2f)) {
+                        Text("Sesi Valid", color = Color(0xFF065F46), style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                }
+
                 val warnaStatus = when (keadaan.statusKoneksi) {
                     StatusKoneksiServer.Tersambung -> Color(0xFF10B981) // Emerald 500
                     StatusKoneksiServer.Terputus -> Color(0xFFEF4444) // Red 500

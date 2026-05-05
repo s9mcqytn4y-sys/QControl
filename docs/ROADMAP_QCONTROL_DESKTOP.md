@@ -20,6 +20,7 @@ Dokumen ini merangkum rencana pengembangan QControl sebagai aplikasi Desktop (Wi
 - [x] Fase 2D-R2-R1: Validasi runtime dan polesan UI read-only Master Data.
 - [x] Fase 2E-A: Fondasi Draft Lokal Input Harian.
 - [x] Fase 2E-B: Matrix Defect x Slot Waktu Dinamis (Lokal Only).
+- [x] Fase 2E-B-R1: Runtime Hardening (Offline Cache, Session Handling, UI Fixes).
 - [ ] Fase 2F: Sinkronisasi Transaksi ke Server.
 
 ## Fase 3: Fitur Bisnis Utama

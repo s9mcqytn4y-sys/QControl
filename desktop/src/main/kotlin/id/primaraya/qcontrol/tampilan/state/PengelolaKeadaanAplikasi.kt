@@ -179,6 +179,15 @@ class PengelolaKeadaanAplikasi(
             is AksiAplikasi.UpdateDefectSlot -> {
                 updateDefectSlot(aksi.partId, aksi.slotId, aksi.defectId, aksi.qty)
             }
+            is AksiAplikasi.ResetDraftInputHarian -> {
+                // Untuk fase ini cukup bersihkan state terpilih dan muat ulang
+                _keadaan.update { it.copy(inputPartTerpilih = null, matrixInputDefectPart = null) }
+                muatDaftarInputPart()
+            }
+            is AksiAplikasi.MuatUlangDataLokal -> {
+                muatMasterDataLokal()
+                muatKonfigurasiLokal()
+            }
         }
     }
 
@@ -453,7 +462,8 @@ class PengelolaKeadaanAplikasi(
         _keadaan.update {
             it.copy(
                 sedangMenarikMasterData = true,
-                pesanMasterData = "Menarik master data dari PGNServer..."
+                pesanMasterData = "Menarik master data dari PGNServer...",
+                sesiHeadQCTidakValid = false
             )
         }
         lingkup.launch {
@@ -464,16 +474,21 @@ class PengelolaKeadaanAplikasi(
                         it.copy(
                             sedangMenarikMasterData = false,
                             pesanMasterData = "Master data berhasil diperbarui.",
-                            ringkasanMasterData = ringkasan
+                            ringkasanMasterData = ringkasan,
+                            masterDataLokalTersedia = true
                         )
                     }
                     muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
                 }
                 is HasilOperasi.Gagal -> {
+                    val pesan = hasil.kesalahan.pesan
+                    val sesiInvalid = pesan.contains("401") || pesan.contains("Unauthorized", ignoreCase = true) || pesan.contains("Sesi", ignoreCase = true)
+                    
                     _keadaan.update {
                         it.copy(
                             sedangMenarikMasterData = false,
-                            pesanMasterData = hasil.kesalahan.pesan
+                            pesanMasterData = pesan,
+                            sesiHeadQCTidakValid = sesiInvalid
                         )
                     }
                 }
@@ -486,12 +501,11 @@ class PengelolaKeadaanAplikasi(
             when (val hasil = bacaRingkasanMasterDataUseCase.eksekusi()) {
                 is HasilOperasi.Berhasil<*> -> {
                     val ringkasan = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanMasterData
-                    _keadaan.update { it.copy(ringkasanMasterData = ringkasan, pesanMasterData = null) }
+                    _keadaan.update { it.copy(ringkasanMasterData = ringkasan, pesanMasterData = null, masterDataLokalTersedia = true) }
                     muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
                 }
                 is HasilOperasi.Gagal -> {
-                    // Master data belum pernah ditarik — biarkan state kosong, tidak error
-                    _keadaan.update { it.copy(ringkasanMasterData = null) }
+                    _keadaan.update { it.copy(ringkasanMasterData = null, masterDataLokalTersedia = false) }
                 }
             }
         }
@@ -593,6 +607,11 @@ class PengelolaKeadaanAplikasi(
     private fun muatDraftInputHarian(tanggal: String, lineId: String) {
         _keadaan.update { it.copy(sedangMemuatInputHarian = true, pesanInputHarian = "Memuat draft...") }
         lingkup.launch {
+            // Pastikan master line sudah ada di state untuk selector
+            if (_keadaan.value.daftarLineProduksiMaster.isEmpty()) {
+                muatDaftarTabMasterData(TabMasterData.LINE_PRODUKSI)
+            }
+
             when (val hasil = kelolaInputHarianUseCase.ambilAtauBuatDraft(tanggal, lineId)) {
                 is HasilOperasi.Berhasil<*> -> {
                     val draft = hasil.data as id.primaraya.qcontrol.ranah.model.DraftPemeriksaanHarian
@@ -620,9 +639,9 @@ class PengelolaKeadaanAplikasi(
     }
 
     private fun muatDaftarInputPart(kataKunci: String = _keadaan.value.kataKunciPartInputHarian) {
-        val draftId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        val draft = _keadaan.value.draftPemeriksaanHarian ?: return
         lingkup.launch {
-            when (val hasil = kelolaInputHarianUseCase.bacaDaftarPart(draftId, kataKunci)) {
+            when (val hasil = kelolaInputHarianUseCase.bacaDaftarPart(draft.id, draft.lineId, kataKunci)) {
                 is HasilOperasi.Berhasil<*> -> {
                     @Suppress("UNCHECKED_CAST")
                     val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.DraftInputPart>
@@ -663,7 +682,12 @@ class PengelolaKeadaanAplikasi(
 
             // 4. Bangun Matrix
             val matrix = kelolaInputHarianUseCase.bacaMatrixInputDefect(part, slots, templates, inputs)
-            _keadaan.update { it.copy(matrixInputDefectPart = matrix) }
+            _keadaan.update { 
+                it.copy(
+                    matrixInputDefectPart = matrix,
+                    pesanKesiapanInputHarian = if (templates.isEmpty()) "Template defect part ini belum tersedia. Periksa Master Data." else null
+                ) 
+            }
         }
     }
 

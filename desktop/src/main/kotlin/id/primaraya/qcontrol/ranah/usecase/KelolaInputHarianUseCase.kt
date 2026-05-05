@@ -14,24 +14,20 @@ class KelolaInputHarianUseCase(
         return repositoriInputHarianLokal.ambilAtauBuatDraft(tanggalProduksi, lineId)
     }
 
-    fun bacaDaftarPart(pemeriksaanHarianId: String, kataKunci: String = ""): HasilOperasi<List<DraftInputPart>> {
+    fun bacaDaftarPart(pemeriksaanHarianId: String, lineId: String, kataKunci: String = ""): HasilOperasi<List<DraftInputPart>> {
         // Ambil draft yang sudah ada
         val hasilDraft = repositoriInputHarianLokal.ambilDraftInputPart(pemeriksaanHarianId)
         if (hasilDraft is HasilOperasi.Gagal) return hasilDraft
         
         val draftEksisting = (hasilDraft as HasilOperasi.Berhasil).data
         
-        // Ambil dari master data untuk part yang belum ada di draft
-        val hasilMaster = repositoriMasterDataLokal.bacaDaftarPart(kataKunci)
+        // Ambil dari master data untuk part yang belum ada di draft, filter berdasarkan LINE
+        val hasilMaster = repositoriMasterDataLokal.bacaDaftarPart(kataKunci, lineId)
         if (hasilMaster is HasilOperasi.Gagal) return HasilOperasi.Berhasil(draftEksisting)
 
         val masterParts = (hasilMaster as HasilOperasi.Berhasil).data
         
         // Gabungkan: jika di master ada tapi di draft belum ada, tampilkan sebagai draft kosong
-        // Namun untuk fase ini, kita tampilkan yang sudah di-input saja atau semua part?
-        // Sesuai target Fase 2E-A: pilih part + daftar part. 
-        // Idealnya daftar part kiri menunjukkan semua part master yang difilter kata kunci.
-        
         val hasilGabungan = masterParts.map { master ->
             val draft = draftEksisting.find { it.partId == master.id }
             DraftInputPart(

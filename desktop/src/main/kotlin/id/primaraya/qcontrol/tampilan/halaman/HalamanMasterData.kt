@@ -62,9 +62,14 @@ fun HalamanMasterData(
         }
 
         // ── Pesan status (tarik / error) ─────────────────────────────────────
-        keadaan.pesanMasterData?.let { pesan ->
-            val isError = pesan.startsWith("Sesi") || pesan.startsWith("Gagal") || pesan.contains("error", ignoreCase = true)
-            val isLoading = pesan.contains("Menarik", ignoreCase = true) || pesan.contains("Memuat", ignoreCase = true)
+        val sesiInvalid = keadaan.sesiHeadQCTidakValid
+        val pesanMaster = keadaan.pesanMasterData
+
+        if (sesiInvalid || pesanMaster != null) {
+            val pesan = if (sesiInvalid) "Sesi HeadQC sudah berakhir. Tarik data server perlu login ulang." else pesanMaster ?: ""
+            val isError = sesiInvalid || pesan.startsWith("Gagal") || pesan.contains("error", ignoreCase = true) || pesan.contains("Unauthorized", ignoreCase = true)
+            val isLoading = !sesiInvalid && (pesan.contains("Menarik", ignoreCase = true) || pesan.contains("Memuat", ignoreCase = true))
+            
             val warnaTeks = if (isError) MaterialTheme.colorScheme.error 
                             else if (isLoading) Color(0xFFB45309) 
                             else Color(0xFF16A34A)
@@ -76,12 +81,25 @@ fun HalamanMasterData(
                 shape = RoundedCornerShape(8.dp),
                 color = warnaLatar
             ) {
-                Text(
-                    text = pesan,
-                    color = warnaTeks,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                )
+                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = pesan,
+                        color = warnaTeks,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (sesiInvalid) {
+                        Button(
+                            onClick = { onAksi(AksiAplikasi.Logout) },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.height(28.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text("Logout & Login Ulang", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
             }
         }
 

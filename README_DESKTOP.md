@@ -1,4 +1,4 @@
-# QControl Desktop - Fase 2E-B: Matrix Defect x Slot Waktu Dinamis
+# QControl Desktop - Fase 2E-B-R1: Runtime Hardening & Matrix Fixes
 
 Dokumen ini menjelaskan struktur dan cara kerja aplikasi QControl versi Desktop.
 
@@ -28,14 +28,14 @@ Sesuai kontrak PGNServer Fase 2C, aplikasi ini hanya mengizinkan akses untuk per
 3. Jika berhasil, token Sanctum akan disimpan di database lokal (`sesi_autentikasi`).
 4. Sesi akan bertahan meskipun aplikasi ditutup (Persistent Session).
 
-## Cara Uji Matrix Input Harian (Fase 2E-B)
+## Cara Uji Matrix Input Harian (Fase 2E-B-R1)
 1. Login sebagai HeadQC.
-2. Pastikan Master Data sudah ditarik dari server (termasuk Slot Waktu dan Relasi Part-Defect).
+2. Buka menu **Master Data**, lakukan penarikan data dari server untuk pertama kali.
 3. Buka menu **Input Harian**.
-4. Pilih Line dan Part yang memiliki template defect.
-5. Gunakan matrix pada panel tengah untuk mengisi jumlah defect berdasarkan jam kejadian.
-6. **Validasi QC**: Pastikan Total Defect tidak melebihi Total Check. Jika melebihi, akan muncul peringatan dan data tidak tersimpan.
-7. **Offline Friendly**: Semua input disimpan ke draft lokal SQLite secara real-time.
+4. Jika master data belum ada, ikuti instruksi untuk menarik data master.
+5. Pilih Line (PRESS/SEWING) dan pastikan daftar part muncul sesuai line tersebut.
+6. Isi data pada matrix, pastikan ringkasan di panel kanan rapi dan mudah dibaca.
+7. Simulasikan sesi berakhir dengan memutus internet atau mengubah token di DB, lalu coba tarik master data lagi. Pastikan muncul pesan error sesi yang informatif.
 
 ## Catatan Penting
 - **Role Lock**: Hanya role `HeadQC` yang dapat login.

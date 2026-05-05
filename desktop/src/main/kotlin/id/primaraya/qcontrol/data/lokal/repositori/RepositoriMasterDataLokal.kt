@@ -225,23 +225,30 @@ class RepositoriMasterDataLokal(
         }
     }
 
-    fun bacaDaftarPart(kataKunci: String = ""): HasilOperasi<List<Part>> {
+    fun bacaDaftarPart(kataKunci: String = "", lineId: String? = null): HasilOperasi<List<Part>> {
         return try {
             koneksiDatabase.bukaKoneksi().use { koneksi ->
-                val sql = if (kataKunci.isBlank()) {
-                    "SELECT * FROM master_part ORDER BY nama_part"
-                } else {
-                    "SELECT * FROM master_part WHERE nama_part LIKE ? OR kode_unik_part LIKE ? OR nomor_part LIKE ? OR nama_material LIKE ? OR kode_proyek LIKE ? ORDER BY nama_part"
+                var sql = "SELECT * FROM master_part WHERE 1=1"
+                val parameter = mutableListOf<String>()
+                
+                if (kataKunci.isNotBlank()) {
+                    sql += " AND (nama_part LIKE ? OR kode_unik_part LIKE ? OR nomor_part LIKE ? OR nama_material LIKE ? OR kode_proyek LIKE ?)"
+                    val pola = "%$kataKunci%"
+                    repeat(5) { parameter.add(pola) }
                 }
+                
+                if (!lineId.isNullOrBlank()) {
+                    sql += " AND (line_default_id = ? OR kode_line_default = (SELECT kode_line FROM master_line_produksi WHERE id = ?))"
+                    parameter.add(lineId)
+                    parameter.add(lineId)
+                }
+                
+                sql += " ORDER BY nama_part"
+                
                 val daftar = mutableListOf<Part>()
                 koneksi.prepareStatement(sql).use { ps ->
-                    if (kataKunci.isNotBlank()) {
-                        val pola = "%$kataKunci%"
-                        ps.setString(1, pola)
-                        ps.setString(2, pola)
-                        ps.setString(3, pola)
-                        ps.setString(4, pola)
-                        ps.setString(5, pola)
+                    parameter.forEachIndexed { index, s ->
+                        ps.setString(index + 1, s)
                     }
                     val rs = ps.executeQuery()
                     while (rs.next()) {

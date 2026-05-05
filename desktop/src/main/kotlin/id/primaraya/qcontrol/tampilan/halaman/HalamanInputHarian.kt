@@ -2,13 +2,9 @@ package id.primaraya.qcontrol.tampilan.halaman
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.BorderStroke
@@ -22,7 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import id.primaraya.qcontrol.ranah.model.*
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
@@ -38,6 +33,50 @@ fun HalamanInputHarian(
         if (keadaan.draftPemeriksaanHarian == null) {
             onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, keadaan.lineAktif))
         }
+        if (!keadaan.masterDataLokalTersedia) {
+            onAksi(AksiAplikasi.MuatMasterDataLokal)
+        }
+    }
+
+    if (!keadaan.masterDataLokalTersedia) {
+        Box(modifier = Modifier.fillMaxSize().background(LatarBelakangKonten), contentAlignment = Alignment.Center) {
+            Card(
+                modifier = Modifier.width(400.dp).padding(UkuranQControl.SpasiNormal),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(64.dp), tint = VibrantOrange)
+                    Text("Master Data Belum Tersedia", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Tarik Master Data dari PGNServer terlebih dahulu agar Input Harian bisa digunakan secara offline.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = TeksAbuAbu
+                    )
+                    Button(
+                        onClick = { onAksi(AksiAplikasi.PilihRute(id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi.MasterData)) },
+                        colors = ButtonDefaults.buttonColors(containerColor = VibrantOrange),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Buka Master Data")
+                    }
+                    OutlinedButton(
+                        onClick = { onAksi(AksiAplikasi.MuatUlangDataLokal) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Muat Ulang Data Lokal")
+                    }
+                }
+            }
+        }
+        return
     }
 
     Row(
@@ -94,27 +133,37 @@ private fun PanelKiriPart(
 
             // Selector Line
             var expanded by remember { mutableStateOf(false) }
-            val lineTerpilih = keadaan.daftarLineProduksiMaster.find { it.id == keadaan.draftPemeriksaanHarian?.lineId }?.namaLine ?: keadaan.lineAktif
+            val lineTerpilih = keadaan.daftarLineProduksiMaster.find { it.id == keadaan.draftPemeriksaanHarian?.lineId }
             
             Box {
                 OutlinedButton(
                     onClick = { expanded = true },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(lineTerpilih)
+                        Text(lineTerpilih?.namaLine ?: "Pilih Line...", maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                     }
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    if (keadaan.daftarLineProduksiMaster.isEmpty()) {
+                        DropdownMenuItem(text = { Text("Master Line Kosong") }, onClick = {})
+                    }
                     keadaan.daftarLineProduksiMaster.forEach { line ->
                         DropdownMenuItem(
-                            text = { Text(line.namaLine) },
+                            text = { 
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (line.id == lineTerpilih?.id) Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = VibrantOrange)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(line.namaLine)
+                                }
+                            },
                             onClick = {
                                 onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, line.id))
                                 expanded = false
@@ -127,25 +176,32 @@ private fun PanelKiriPart(
             OutlinedTextField(
                 value = keadaan.kataKunciPartInputHarian,
                 onValueChange = { onAksi(AksiAplikasi.UbahKataKunciInputPart(it)) },
-                placeholder = { Text("Cari Part...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                placeholder = { Text("Cari Part...", style = MaterialTheme.typography.bodySmall) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                textStyle = MaterialTheme.typography.bodyMedium
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(keadaan.daftarInputPartDraft) { inputPart ->
-                    ItemPartDraft(
-                        inputPart = inputPart,
-                        isTerpilih = keadaan.inputPartTerpilih?.id == inputPart.id,
-                        onClick = { onAksi(AksiAplikasi.PilihInputPart(inputPart)) }
-                    )
+            if (keadaan.daftarInputPartDraft.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Part tidak ditemukan", style = MaterialTheme.typography.labelSmall, color = TeksAbuAbu)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(keadaan.daftarInputPartDraft) { inputPart ->
+                        ItemPartDraft(
+                            inputPart = inputPart,
+                            isTerpilih = keadaan.inputPartTerpilih?.partId == inputPart.partId,
+                            onClick = { onAksi(AksiAplikasi.PilihInputPart(inputPart)) }
+                        )
+                    }
                 }
             }
         }
@@ -300,7 +356,15 @@ private fun PanelTengahDefect(
                 }
             } else if (matrix.barisDefect.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Belum ada template defect untuk part ini", color = TeksAbuAbu)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("⚠️", style = MaterialTheme.typography.displaySmall)
+                        Text(
+                            keadaan.pesanKesiapanInputHarian ?: "Belum ada template defect untuk part ini",
+                            color = TeksAbuAbu,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
@@ -439,14 +503,6 @@ private fun CellInputDefect(
 }
 
 @Composable
-private fun KolomStatistikKecil(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = TeksAbuAbu)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
-    }
-}
-
-@Composable
 private fun PanelKananRingkasan(
     modifier: Modifier,
     keadaan: KeadaanAplikasi,
@@ -458,27 +514,20 @@ private fun PanelKananRingkasan(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(UkuranQControl.SpasiNormal)) {
-            Text("Ringkasan", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = VibrantOrange)
+            Text("Ringkasan Hari Ini", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = VibrantOrange)
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
 
-            // Total Qty Check & OK
+            // Stats Cards
             val totalCheck = keadaan.ringkasanInputHarian?.totalQtyCheck ?: 0
             val totalDefect = keadaan.ringkasanInputHarian?.totalQtyDefect ?: 0
             val totalOk = totalCheck - totalDefect
+            val rasio = if (totalCheck > 0) (totalDefect.toDouble() / totalCheck.toDouble() * 100.0) else 0.0
             
-            Surface(
-                color = SolarYellow.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    KolomStatistik("TOTAL CHECK", totalCheck.toString(), Color.Black)
-                    KolomStatistik("TOTAL OK", totalOk.toString(), Color(0xFF16A34A))
-                    KolomStatistik("TOTAL DEFECT", totalDefect.toString(), MaterialTheme.colorScheme.error)
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ItemStatistikRingkasan("TOTAL CHECK", totalCheck.toString(), Color.Black)
+                ItemStatistikRingkasan("TOTAL OK", totalOk.toString(), Color(0xFF16A34A))
+                ItemStatistikRingkasan("TOTAL DEFECT", totalDefect.toString(), MaterialTheme.colorScheme.error)
+                ItemStatistikRingkasan("RATIO DEFECT", String.format("%.2f%%", rasio), if (rasio > 0) SolarYellow else TeksAbuAbu)
             }
 
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
@@ -492,37 +541,60 @@ private fun PanelKananRingkasan(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(keadaan.ringkasanInputHarian?.daftarPerSlot ?: emptyList<DefectPerSlotTerhitung>()) { slot ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(slot.labelSlot, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                        Text(
-                            slot.jumlah.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                val daftarPerSlot = keadaan.ringkasanInputHarian?.daftarPerSlot ?: emptyList()
+                if (daftarPerSlot.isEmpty()) {
+                    item {
+                        Text("Belum ada data defect tercatat", style = MaterialTheme.typography.bodySmall, color = TeksAbuAbu, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+                    }
+                } else {
+                    items(daftarPerSlot) { slot ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().background(Color(0xFFF9FAFB), RoundedCornerShape(4.dp)).padding(8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(slot.labelSlot, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Text(
+                                slot.jumlah.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
             
-            Button(
-                onClick = { /* Submit belum diimplementasikan sesuai target fase ini */ },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = VibrantOrange),
-                shape = RoundedCornerShape(8.dp),
-                enabled = false // Belum diaktifkan di fase 2E-A
-            ) {
-                Icon(Icons.Default.CloudUpload, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Simpan & Kirim")
+            // Operational Buttons
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { onAksi(AksiAplikasi.ResetDraftInputHarian) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TeksAbuAbu)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reset Draft")
+                }
+
+                Button(
+                    onClick = { /* Submit belum diimplementasikan */ },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = VibrantOrange),
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = false
+                ) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Simpan & Kirim")
+                }
             }
+            
             Text(
-                "Submit dinonaktifkan pada fase ini (Fondasi Lokal Only)",
+                "Submit dinonaktifkan (Fondasi Lokal Only)",
                 style = MaterialTheme.typography.labelSmall,
                 color = TeksAbuAbu,
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -533,9 +605,27 @@ private fun PanelKananRingkasan(
 }
 
 @Composable
-private fun KolomStatistik(label: String, value: String, color: Color) {
+private fun ItemStatistikRingkasan(label: String, value: String, color: Color) {
+    Surface(
+        color = Color(0xFFF9FAFB),
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TeksAbuAbu)
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = color)
+        }
+    }
+}
+
+@Composable
+private fun KolomStatistikKecil(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = TeksAbuAbu)
-        Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = color)
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
     }
 }
