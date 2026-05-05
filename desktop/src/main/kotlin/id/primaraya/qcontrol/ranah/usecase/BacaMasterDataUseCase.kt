@@ -27,3 +27,7 @@ class BacaDaftarSlotWaktuMasterUseCase(private val repositori: RepositoriMasterD
 class BacaDaftarLineProduksiMasterUseCase(private val repositori: RepositoriMasterDataQControl) {
     fun eksekusi(): HasilOperasi<List<LineProduksi>> = repositori.bacaDaftarLineProduksi()
 }
+
+class BacaRelasiPartDefectMasterUseCase(private val repositori: RepositoriMasterDataQControl) {
+    fun eksekusi(partId: String): HasilOperasi<List<RelasiPartDefect>> = repositori.bacaRelasiPartDefect(partId)
+}

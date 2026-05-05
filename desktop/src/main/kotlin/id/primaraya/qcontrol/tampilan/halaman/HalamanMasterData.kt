@@ -2,6 +2,8 @@ package id.primaraya.qcontrol.tampilan.halaman
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -90,7 +92,7 @@ fun HalamanMasterData(
             } else {
                 when (keadaan.tabMasterDataAktif) {
                     TabMasterData.RINGKASAN -> TabRingkasan(keadaan, onAksi)
-                    TabMasterData.PART -> TabDaftarPart(keadaan.daftarPartMaster, onAksi)
+                    TabMasterData.PART -> TabDaftarPart(keadaan, onAksi)
                     TabMasterData.JENIS_DEFECT -> TabDaftarJenisDefect(keadaan.daftarJenisDefectMaster, onAksi)
                     TabMasterData.MATERIAL -> TabDaftarMaterial(keadaan.daftarMaterialMaster, onAksi)
                     TabMasterData.SLOT_WAKTU -> TabDaftarSlotWaktu(keadaan.daftarSlotWaktuMaster, onAksi)
@@ -280,20 +282,145 @@ private fun BarisMeta(kunci: String, nilai: String) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab: Part
+// Tab: Part (dengan SplitView Detail Defect)
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun TabDaftarPart(daftar: List<Part>, onAksi: (AksiAplikasi) -> Unit) {
-    if (daftar.isEmpty()) { KosongState("🔩", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+private fun TabDaftarPart(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Unit) {
+    val daftar = keadaan.daftarPartMaster
+    if (daftar.isEmpty()) { 
+        KosongState("🔩", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) })
+        return 
+    }
+
     val kolom = listOf(
         "Kode Unik" to 0.15f, 
-        "Nama Part" to 0.25f, 
-        "Nomor Part" to 0.15f, 
-        "Material" to 0.2f, 
-        "Proyek" to 0.1f, 
-        "Line" to 0.15f
+        "Nama Part" to 0.35f, 
+        "Nomor Part" to 0.20f, 
+        "Line" to 0.30f
     )
-    TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeUnikPart, it.namaPart, it.nomorPart ?: "-", it.namaMaterial ?: "-", it.kodeProyek ?: "-", it.namaLineDefault ?: "-") })
+
+    Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(modifier = Modifier.weight(1f)) {
+            TabelMasterData(
+                kolom = kolom, 
+                baris = daftar.map { listOf(it.kodeUnikPart, it.namaPart, it.nomorPart ?: "-", it.namaLineDefault ?: "-") },
+                itemTerpilihIndeks = if (keadaan.partMasterTerpilih != null) daftar.indexOf(keadaan.partMasterTerpilih) else -1,
+                onKlikBaris = { indeks ->
+                    val part = daftar.getOrNull(indeks)
+                    onAksi(AksiAplikasi.PilihPartMaster(if (part == keadaan.partMasterTerpilih) null else part))
+                }
+            )
+        }
+
+        if (keadaan.partMasterTerpilih != null) {
+            PanelDetailPart(
+                part = keadaan.partMasterTerpilih,
+                daftarRelasi = keadaan.daftarRelasiPartDefectMaster,
+                onTutup = { onAksi(AksiAplikasi.PilihPartMaster(null)) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun PanelDetailPart(
+    part: Part,
+    daftarRelasi: List<RelasiPartDefect>,
+    onTutup: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.width(350.dp).fillMaxHeight(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+        shadowElevation = 4.dp
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Template Defect",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = VibrantOrange
+                    )
+                    Text(
+                        text = part.namaPart,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TeksAbuAbu,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = onTutup, modifier = Modifier.size(24.dp)) {
+                    Text("✕", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+            Spacer(Modifier.height(12.dp))
+
+            if (daftarRelasi.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Tidak ada relasi defect untuk part ini.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TeksAbuAbu,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(daftarRelasi) { relasi ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                // Badge Kode Tampilan (A-L, B-M, dsb)
+                                Surface(
+                                    color = DeepAmber,
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = relasi.kodeTampilanDefect ?: "-",
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = relasi.kodeDefect ?: "-",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = relasi.jenisDefectId,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TeksAbuAbu
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -348,7 +475,9 @@ private fun TabDaftarLineProduksi(daftar: List<LineProduksi>, onAksi: (AksiAplik
 @Composable
 private fun TabelMasterData(
     kolom: List<Pair<String, Float>>,
-    baris: List<List<String>>
+    baris: List<List<String>>,
+    itemTerpilihIndeks: Int = -1,
+    onKlikBaris: ((Int) -> Unit)? = null
 ) {
     val bentukKartu = RoundedCornerShape(12.dp)
     Surface(
@@ -383,12 +512,19 @@ private fun TabelMasterData(
             // Data baris
             LazyColumn {
                 itemsIndexed(baris) { indeks, kolBaris ->
-                    val warnaLatar = if (indeks % 2 == 0) Color.Transparent
+                    val isTerpilih = indeks == itemTerpilihIndeks
+                    val warnaLatar = if (isTerpilih) VibrantOrange.copy(alpha = 0.1f)
+                                     else if (indeks % 2 == 0) Color.Transparent
                                      else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.05f)
+                    
+                    val borderModifier = if (isTerpilih) Modifier.border(1.dp, VibrantOrange.copy(alpha = 0.3f)) else Modifier
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .then(borderModifier)
                             .background(warnaLatar)
+                            .then(if (onKlikBaris != null) Modifier.clickable { onKlikBaris(indeks) } else Modifier)
                             .padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

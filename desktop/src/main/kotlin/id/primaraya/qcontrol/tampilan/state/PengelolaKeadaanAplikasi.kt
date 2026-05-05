@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import id.primaraya.qcontrol.ranah.usecase.*
 
 import kotlinx.coroutines.flow.collect
 import id.primaraya.qcontrol.ranah.usecase.BacaKonfigurasiLokalUseCase
@@ -49,6 +50,7 @@ class PengelolaKeadaanAplikasi(
     private val bacaDaftarMaterialMasterUseCase: BacaDaftarMaterialMasterUseCase,
     private val bacaDaftarSlotWaktuMasterUseCase: BacaDaftarSlotWaktuMasterUseCase,
     private val bacaDaftarLineProduksiMasterUseCase: BacaDaftarLineProduksiMasterUseCase,
+    private val bacaRelasiPartDefectMasterUseCase: BacaRelasiPartDefectMasterUseCase,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
@@ -145,6 +147,9 @@ class PengelolaKeadaanAplikasi(
             is AksiAplikasi.UbahKataKunciMasterData -> {
                 _keadaan.update { it.copy(kataKunciMasterData = aksi.kataKunci) }
                 muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif, aksi.kataKunci)
+            }
+            is AksiAplikasi.PilihPartMaster -> {
+                pilihPartMaster(aksi.part)
             }
         }
     }
@@ -506,6 +511,24 @@ class PengelolaKeadaanAplikasi(
                     }
                 }
                 TabMasterData.RINGKASAN -> { /* tidak perlu memuat daftar */ }
+            }
+        }
+    }
+
+    private fun pilihPartMaster(part: id.primaraya.qcontrol.ranah.model.Part?) {
+        _keadaan.update { it.copy(partMasterTerpilih = part, daftarRelasiPartDefectMaster = emptyList()) }
+        
+        if (part != null) {
+            lingkup.launch {
+                when (val hasil = bacaRelasiPartDefectMasterUseCase.eksekusi(part.id)) {
+                    is HasilOperasi.Berhasil<*> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        _keadaan.update { it.copy(daftarRelasiPartDefectMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.RelasiPartDefect>) }
+                    }
+                    is HasilOperasi.Gagal -> {
+                        // Abaikan error pembacaan relasi
+                    }
+                }
             }
         }
     }

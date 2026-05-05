@@ -26,4 +26,5 @@ sealed class AksiAplikasi {
     object MuatMasterDataLokal : AksiAplikasi()
     data class PilihTabMasterData(val tab: TabMasterData) : AksiAplikasi()
     data class UbahKataKunciMasterData(val kataKunci: String) : AksiAplikasi()
+    data class PilihPartMaster(val part: id.primaraya.qcontrol.ranah.model.Part?) : AksiAplikasi()
 }

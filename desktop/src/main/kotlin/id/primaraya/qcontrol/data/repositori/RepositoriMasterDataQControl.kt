@@ -38,4 +38,7 @@ class RepositoriMasterDataQControl(
 
     fun bacaDaftarLineProduksi(): HasilOperasi<List<LineProduksi>> =
         repositoriLokal.bacaDaftarLineProduksi()
+
+    fun bacaRelasiPartDefect(partId: String): HasilOperasi<List<RelasiPartDefect>> =
+        repositoriLokal.bacaRelasiPartDefect(partId)
 }

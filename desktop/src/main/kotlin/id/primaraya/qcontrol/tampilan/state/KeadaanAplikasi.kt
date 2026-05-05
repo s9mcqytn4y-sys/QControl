@@ -47,6 +47,8 @@ data class KeadaanAplikasi(
     val daftarMaterialMaster: List<id.primaraya.qcontrol.ranah.model.Material> = emptyList(),
     val daftarSlotWaktuMaster: List<id.primaraya.qcontrol.ranah.model.SlotWaktu> = emptyList(),
     val daftarLineProduksiMaster: List<id.primaraya.qcontrol.ranah.model.LineProduksi> = emptyList(),
+    val daftarRelasiPartDefectMaster: List<id.primaraya.qcontrol.ranah.model.RelasiPartDefect> = emptyList(),
+    val partMasterTerpilih: id.primaraya.qcontrol.ranah.model.Part? = null,
     val kataKunciMasterData: String = "",
     val tabMasterDataAktif: TabMasterData = TabMasterData.RINGKASAN
 )

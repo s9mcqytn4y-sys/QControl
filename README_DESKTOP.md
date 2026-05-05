@@ -1,4 +1,4 @@
-# QControl Desktop - Fase 2C-R3: Hardening Auth Client HeadQC
+# QControl Desktop - Fase 2D-R3: Master Data Cache & Defect Template Validasi
 
 Dokumen ini menjelaskan struktur dan cara kerja aplikasi QControl versi Desktop.
 
@@ -28,18 +28,15 @@ Sesuai kontrak PGNServer Fase 2C, aplikasi ini hanya mengizinkan akses untuk per
 3. Jika berhasil, token Sanctum akan disimpan di database lokal (`sesi_autentikasi`).
 4. Sesi akan bertahan meskipun aplikasi ditutup (Persistent Session).
 
-## Cara Uji Validasi Runtime (Fase 2D-R2-R1)
-1. Login dengan kredensial HeadQC (seperti langkah di atas).
-2. Buka menu Master Data.
-3. Klik tombol "Tarik Master Data dari Server" (membutuhkan koneksi PGNServer).
-4. Pastikan ringkasan data tampil.
-5. Buka tab Part, coba fitur pencarian part.
-6. Tutup aplikasi.
-7. Buka ulang aplikasi, masuk ke Master Data.
-8. Klik "Muat Data Lokal".
-9. Pastikan data tetap utuh tanpa mengambil dari server (mode offline).
+## Cara Uji Validasi Master Data & Template (Fase 2D-R3)
+1. Login sebagai HeadQC.
+2. Buka Master Data, lakukan penarikan data terbaru.
+3. Pastikan `kodeTampilanDefect` tersimpan di cache SQLite lokal.
+4. Pilih salah satu Part, validasi apakah template defect yang muncul sudah sesuai.
+5. Mode Offline: Pastikan data tetap muncul dari cache lokal saat koneksi server diputus.
 
 ## Catatan Penting
-- **Role Lock**: Hanya role `HeadQC` yang dapat login dan disimpan sesi lokalnya.
-- **Persistent Token**: Token dikirim di setiap request sinkronisasi melalui header `Authorization: Bearer`.
-- **Database**: Skema lokal telah ditingkatkan ke Versi 3 untuk mendukung kolom `email`.
+- **Role Lock**: Hanya role `HeadQC` yang dapat login.
+- **Master Data Cache**: Semua data master bersifat read-only dari PGNServer dan disimpan di SQLite lokal untuk performa offline.
+- **Defect Template**: Validasi template per part wajib sebelum masuk ke fase Input Harian.
+- **Database**: Skema lokal telah ditingkatkan untuk mendukung `kodeTampilanDefect`.

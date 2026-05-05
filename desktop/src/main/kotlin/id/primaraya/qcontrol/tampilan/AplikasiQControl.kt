@@ -9,6 +9,7 @@ import id.primaraya.qcontrol.data.remote.http.buatKlienHttpAplikasi
 import id.primaraya.qcontrol.data.remote.layanan.LayananKesehatanServerRemote
 import id.primaraya.qcontrol.data.repositori.RepositoriKesehatanServer
 import id.primaraya.qcontrol.ranah.usecase.PeriksaKesehatanServerUseCase
+import id.primaraya.qcontrol.ranah.usecase.*
 import id.primaraya.qcontrol.tampilan.kerangka.KerangkaAplikasi
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.PengelolaKeadaanAplikasi
@@ -94,6 +95,7 @@ fun AplikasiQControl() {
     val bacaDaftarMaterialMasterUseCase = remember { BacaDaftarMaterialMasterUseCase(repositoriMasterData) }
     val bacaDaftarSlotWaktuMasterUseCase = remember { BacaDaftarSlotWaktuMasterUseCase(repositoriMasterData) }
     val bacaDaftarLineProduksiMasterUseCase = remember { BacaDaftarLineProduksiMasterUseCase(repositoriMasterData) }
+    val bacaRelasiPartDefectMasterUseCase = remember { BacaRelasiPartDefectMasterUseCase(repositoriMasterData) }
 
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
@@ -116,7 +118,8 @@ fun AplikasiQControl() {
             bacaDaftarJenisDefectMasterUseCase,
             bacaDaftarMaterialMasterUseCase,
             bacaDaftarSlotWaktuMasterUseCase,
-            bacaDaftarLineProduksiMasterUseCase
+            bacaDaftarLineProduksiMasterUseCase,
+            bacaRelasiPartDefectMasterUseCase
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()

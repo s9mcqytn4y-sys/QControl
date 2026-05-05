@@ -31,6 +31,11 @@ class MigrasiDatabaseLokal(
                 migrasiVersi4(koneksi)
                 catatMigrasi(koneksi, 4, "tambah_tabel_cache_master_data")
             }
+
+            if (versiSaatIni < 5) {
+                migrasiVersi5(koneksi)
+                catatMigrasi(koneksi, 5, "tambah_kolom_kode_tampilan_defect_relasi")
+            }
         }
     }
 
@@ -286,6 +291,31 @@ class MigrasiDatabaseLokal(
             throw e
         } finally {
             koneksi.autoCommit = true
+        }
+    }
+
+    private fun migrasiVersi5(koneksi: Connection) {
+        val namaTabel = "master_relasi_part_defect"
+        val namaKolom = "kode_tampilan_defect"
+        
+        // Cek apakah kolom sudah ada (Idempotent Migration)
+        var kolomSudahAda = false
+        val sqlCek = "PRAGMA table_info($namaTabel)"
+        koneksi.createStatement().use { statement ->
+            val resultSet = statement.executeQuery(sqlCek)
+            while (resultSet.next()) {
+                if (resultSet.getString("name") == namaKolom) {
+                    kolomSudahAda = true
+                    break
+                }
+            }
+        }
+
+        if (!kolomSudahAda) {
+            val sqlTambah = "ALTER TABLE $namaTabel ADD COLUMN $namaKolom TEXT"
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlTambah)
+            }
         }
     }
 }

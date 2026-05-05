@@ -69,6 +69,7 @@ fun RelasiPartDefectDto.keDomain(): RelasiPartDefect = RelasiPartDefect(
     kodeUnikPart = kodeUnikPart,
     jenisDefectId = jenisDefectId,
     kodeDefect = kodeDefect,
+    kodeTampilanDefect = kodeTampilanDefect,
     urutanTampil = urutanTampil,
     aktif = aktif
 )

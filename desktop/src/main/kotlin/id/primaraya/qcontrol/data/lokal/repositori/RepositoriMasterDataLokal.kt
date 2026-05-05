@@ -140,7 +140,7 @@ class RepositoriMasterDataLokal(
 
                     // Simpan relasi part-defect
                     koneksi.prepareStatement(
-                        "INSERT OR REPLACE INTO master_relasi_part_defect (id, part_id, kode_unik_part, jenis_defect_id, kode_defect, urutan_tampil, aktif) VALUES (?,?,?,?,?,?,?)"
+                        "INSERT OR REPLACE INTO master_relasi_part_defect (id, part_id, kode_unik_part, jenis_defect_id, kode_defect, kode_tampilan_defect, urutan_tampil, aktif) VALUES (?,?,?,?,?,?,?,?)"
                     ).use { ps ->
                         for (item in masterData.relasiPartDefect) {
                             ps.setString(1, item.id)
@@ -148,8 +148,9 @@ class RepositoriMasterDataLokal(
                             ps.setString(3, item.kodeUnikPart)
                             ps.setString(4, item.jenisDefectId)
                             ps.setString(5, item.kodeDefect)
-                            ps.setInt(6, item.urutanTampil)
-                            ps.setInt(7, if (item.aktif) 1 else 0)
+                            ps.setString(6, item.kodeTampilanDefect)
+                            ps.setInt(7, item.urutanTampil)
+                            ps.setInt(8, if (item.aktif) 1 else 0)
                             ps.addBatch()
                         }
                         ps.executeBatch()
@@ -393,6 +394,36 @@ class RepositoriMasterDataLokal(
             }
         } catch (e: Exception) {
             HasilOperasi.Gagal(KesalahanAplikasi.TidakDiketahui("Gagal membaca daftar line produksi: ${e.message}"))
+        }
+    }
+
+    fun bacaRelasiPartDefect(partId: String): HasilOperasi<List<RelasiPartDefect>> {
+        return try {
+            koneksiDatabase.bukaKoneksi().use { koneksi ->
+                val sql = "SELECT * FROM master_relasi_part_defect WHERE part_id = ? ORDER BY urutan_tampil"
+                val daftar = mutableListOf<RelasiPartDefect>()
+                koneksi.prepareStatement(sql).use { ps ->
+                    ps.setString(1, partId)
+                    val rs = ps.executeQuery()
+                    while (rs.next()) {
+                        daftar.add(
+                            RelasiPartDefect(
+                                id = rs.getString("id"),
+                                partId = rs.getString("part_id"),
+                                kodeUnikPart = rs.getString("kode_unik_part"),
+                                jenisDefectId = rs.getString("jenis_defect_id"),
+                                kodeDefect = rs.getString("kode_defect"),
+                                kodeTampilanDefect = rs.getString("kode_tampilan_defect"),
+                                urutanTampil = rs.getInt("urutan_tampil"),
+                                aktif = rs.getInt("aktif") == 1
+                            )
+                        )
+                    }
+                }
+                HasilOperasi.Berhasil(daftar)
+            }
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.TidakDiketahui("Gagal membaca relasi part defect: ${e.message}"))
         }
     }
 }

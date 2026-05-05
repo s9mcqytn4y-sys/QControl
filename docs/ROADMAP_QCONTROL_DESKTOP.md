@@ -18,7 +18,7 @@ Dokumen ini merangkum rencana pengembangan QControl sebagai aplikasi Desktop (Wi
 - [x] Fase 2C-R3: Hardening Auth Client HeadQC (Idempotent Migration, Error Mapping, Role Enforcement).
 - [x] Fase 2D-R2: Implementasi Master Data Pull & Local Cache SQLite.
 - [x] Fase 2D-R2-R1: Validasi runtime dan polesan UI read-only Master Data.
-- [ ] Fase 2D-R3: Siapkan komponen pemilih Part dan Jenis Defect untuk Input Harian.
+- [/] Fase 2D-R3: Cache dan tampilkan `kodeTampilanDefect`, validasi template defect per part.
 - [ ] Fase 2E: Mekanisme Transaksi Pemeriksaan Harian.
 
 ## Fase 3: Fitur Bisnis Utama

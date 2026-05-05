@@ -9,6 +9,7 @@ data class RelasiPartDefectDto(
     val kodeUnikPart: String? = null,
     val jenisDefectId: String,
     val kodeDefect: String? = null,
+    val kodeTampilanDefect: String? = null,
     val urutanTampil: Int,
     val aktif: Boolean
 )
