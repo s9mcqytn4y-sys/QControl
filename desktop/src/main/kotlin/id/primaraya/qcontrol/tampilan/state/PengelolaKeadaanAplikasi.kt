@@ -52,6 +52,7 @@ class PengelolaKeadaanAplikasi(
     private val bacaDaftarLineProduksiMasterUseCase: BacaDaftarLineProduksiMasterUseCase,
     private val bacaRelasiPartDefectMasterUseCase: BacaRelasiPartDefectMasterUseCase,
     private val bacaTemplateDefectPartUseCase: BacaTemplateDefectPartUseCase,
+    private val kelolaInputHarianUseCase: KelolaInputHarianUseCase,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
@@ -157,6 +158,26 @@ class PengelolaKeadaanAplikasi(
             }
             is AksiAplikasi.MuatTemplateDefectPart -> {
                 muatTemplateDefectPart(aksi.partId)
+            }
+            is AksiAplikasi.MuatDraftInputHarian -> {
+                muatDraftInputHarian(aksi.tanggal, aksi.lineId)
+            }
+            is AksiAplikasi.UbahTanggalDraftHarian -> {
+                _keadaan.update { it.copy(tanggalPemeriksaanHarian = aksi.tanggal) }
+                muatDraftInputHarian(aksi.tanggal, _keadaan.value.lineAktif)
+            }
+            is AksiAplikasi.UbahKataKunciInputPart -> {
+                _keadaan.update { it.copy(kataKunciPartInputHarian = aksi.kataKunci) }
+                muatDaftarInputPart(aksi.kataKunci)
+            }
+            is AksiAplikasi.PilihInputPart -> {
+                pilihInputPart(aksi.part)
+            }
+            is AksiAplikasi.UpdateQtyCheckInputPart -> {
+                updateQtyCheck(aksi.partId, aksi.qty)
+            }
+            is AksiAplikasi.UpdateDefectSlot -> {
+                updateDefectSlot(aksi.partId, aksi.defectId, aksi.qty)
             }
         }
     }
@@ -565,6 +586,97 @@ class PengelolaKeadaanAplikasi(
                 is HasilOperasi.Gagal -> {
                     _keadaan.update { it.copy(pesanTemplateDefectPart = "Gagal memuat template: ${hasil.kesalahan.pesan}") }
                 }
+            }
+        }
+    }
+
+    private fun muatDraftInputHarian(tanggal: String, lineId: String) {
+        _keadaan.update { it.copy(sedangMemuatInputHarian = true, pesanInputHarian = "Memuat draft...") }
+        lingkup.launch {
+            when (val hasil = kelolaInputHarianUseCase.ambilAtauBuatDraft(tanggal, lineId)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    val draft = hasil.data as id.primaraya.qcontrol.ranah.model.DraftPemeriksaanHarian
+                    _keadaan.update { 
+                        it.copy(
+                            sedangMemuatInputHarian = false,
+                            draftPemeriksaanHarian = draft,
+                            pesanInputHarian = null,
+                            inputPartTerpilih = null
+                        ) 
+                    }
+                    muatDaftarInputPart()
+                    muatRingkasanInputHarian()
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { 
+                        it.copy(
+                            sedangMemuatInputHarian = false,
+                            pesanInputHarian = "Gagal memuat draft: ${hasil.kesalahan.pesan}"
+                        ) 
+                    }
+                }
+            }
+        }
+    }
+
+    private fun muatDaftarInputPart(kataKunci: String = _keadaan.value.kataKunciPartInputHarian) {
+        val draftId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        lingkup.launch {
+            when (val hasil = kelolaInputHarianUseCase.bacaDaftarPart(draftId, kataKunci)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.DraftInputPart>
+                    _keadaan.update { it.copy(daftarInputPartDraft = daftar) }
+                }
+                is HasilOperasi.Gagal -> {}
+            }
+        }
+    }
+
+    private fun pilihInputPart(part: id.primaraya.qcontrol.ranah.model.DraftInputPart?) {
+        _keadaan.update { it.copy(inputPartTerpilih = part) }
+    }
+
+    private fun updateQtyCheck(partId: String, qty: Int) {
+        val harianId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        lingkup.launch {
+            kelolaInputHarianUseCase.updateQtyCheck(harianId, partId, qty)
+            muatDaftarInputPart()
+            muatRingkasanInputHarian()
+            
+            // Update selection state if needed
+            if (_keadaan.value.inputPartTerpilih?.partId == partId) {
+                _keadaan.update { state ->
+                    state.copy(inputPartTerpilih = state.daftarInputPartDraft.find { it.partId == partId })
+                }
+            }
+        }
+    }
+
+    private fun updateDefectSlot(partId: String, relasiId: String, qty: Int) {
+        val harianId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        lingkup.launch {
+            kelolaInputHarianUseCase.updateDefectSlot(harianId, partId, relasiId, qty)
+            muatDaftarInputPart()
+            muatRingkasanInputHarian()
+            
+            // Update selection state if needed
+            if (_keadaan.value.inputPartTerpilih?.partId == partId) {
+                _keadaan.update { state ->
+                    state.copy(inputPartTerpilih = state.daftarInputPartDraft.find { it.partId == partId })
+                }
+            }
+        }
+    }
+
+    private fun muatRingkasanInputHarian() {
+        val draftId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        lingkup.launch {
+            when (val hasil = kelolaInputHarianUseCase.hitungRingkasan(draftId)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    _keadaan.update { it.copy(ringkasanInputHarian = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanInputHarian) }
+                }
+                is HasilOperasi.Gagal -> {}
             }
         }
     }

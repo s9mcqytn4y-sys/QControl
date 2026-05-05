@@ -52,7 +52,18 @@ data class KeadaanAplikasi(
     val kataKunciMasterData: String = "",
     val tabMasterDataAktif: TabMasterData = TabMasterData.RINGKASAN,
     val daftarTemplateDefectPart: List<id.primaraya.qcontrol.ranah.model.TemplateDefectPart> = emptyList(),
-    val pesanTemplateDefectPart: String? = null
+    val pesanTemplateDefectPart: String? = null,
+
+    // Input Harian (Fase 2E-A)
+    val sedangMemuatInputHarian: Boolean = false,
+    val pesanInputHarian: String? = null,
+    val draftPemeriksaanHarian: id.primaraya.qcontrol.ranah.model.DraftPemeriksaanHarian? = null,
+    val daftarInputPartDraft: List<id.primaraya.qcontrol.ranah.model.DraftInputPart> = emptyList(),
+    val inputPartTerpilih: id.primaraya.qcontrol.ranah.model.DraftInputPart? = null,
+    val daftarDefectSlotDraft: List<id.primaraya.qcontrol.ranah.model.DraftInputDefectSlot> = emptyList(),
+    val ringkasanInputHarian: id.primaraya.qcontrol.ranah.model.RingkasanInputHarian? = null,
+    val tanggalPemeriksaanHarian: String = java.time.LocalDate.now().toString(),
+    val kataKunciPartInputHarian: String = ""
 )
 
 sealed class StatusRingkasanOutbox {

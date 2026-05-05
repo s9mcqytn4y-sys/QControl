@@ -29,4 +29,12 @@ sealed class AksiAplikasi {
     data class PilihPartMaster(val part: id.primaraya.qcontrol.ranah.model.Part?) : AksiAplikasi()
     data class PilihPartMasterUntukTemplate(val part: id.primaraya.qcontrol.ranah.model.Part?) : AksiAplikasi()
     data class MuatTemplateDefectPart(val partId: String) : AksiAplikasi()
+
+    // Input Harian (Fase 2E-A)
+    data class MuatDraftInputHarian(val tanggal: String, val lineId: String) : AksiAplikasi()
+    data class UbahTanggalDraftHarian(val tanggal: String) : AksiAplikasi()
+    data class UbahKataKunciInputPart(val kataKunci: String) : AksiAplikasi()
+    data class PilihInputPart(val part: id.primaraya.qcontrol.ranah.model.DraftInputPart?) : AksiAplikasi()
+    data class UpdateQtyCheckInputPart(val partId: String, val qty: Int) : AksiAplikasi()
+    data class UpdateDefectSlot(val partId: String, val slotId: String, val defectId: String, val qty: Int) : AksiAplikasi()
 }

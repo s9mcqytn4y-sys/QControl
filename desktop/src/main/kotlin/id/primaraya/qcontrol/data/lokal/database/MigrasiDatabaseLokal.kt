@@ -36,6 +36,11 @@ class MigrasiDatabaseLokal(
                 migrasiVersi5(koneksi)
                 catatMigrasi(koneksi, 5, "tambah_kolom_kode_tampilan_defect_relasi")
             }
+
+            if (versiSaatIni < 6) {
+                migrasiVersi6(koneksi)
+                catatMigrasi(koneksi, 6, "tambah_tabel_draft_input_harian")
+            }
         }
     }
 
@@ -316,6 +321,60 @@ class MigrasiDatabaseLokal(
             koneksi.createStatement().use { statement ->
                 statement.execute(sqlTambah)
             }
+        }
+    }
+
+    private fun migrasiVersi6(koneksi: Connection) {
+        val sqlDraftPemeriksaan = """
+            CREATE TABLE IF NOT EXISTS draft_pemeriksaan_harian (
+                id TEXT PRIMARY KEY,
+                tanggal_produksi TEXT NOT NULL,
+                line_id TEXT NOT NULL,
+                catatan TEXT,
+                dibuat_pada TEXT NOT NULL,
+                diperbarui_pada TEXT NOT NULL,
+                UNIQUE(tanggal_produksi, line_id)
+            )
+        """.trimIndent()
+
+        val sqlDraftInputPart = """
+            CREATE TABLE IF NOT EXISTS draft_input_part (
+                id TEXT PRIMARY KEY,
+                pemeriksaan_harian_id TEXT NOT NULL,
+                part_id TEXT NOT NULL,
+                total_check INTEGER NOT NULL DEFAULT 0,
+                total_ok INTEGER NOT NULL DEFAULT 0,
+                total_defect INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (pemeriksaan_harian_id) REFERENCES draft_pemeriksaan_harian(id),
+                UNIQUE(pemeriksaan_harian_id, part_id)
+            )
+        """.trimIndent()
+
+        val sqlDraftInputDefectSlot = """
+            CREATE TABLE IF NOT EXISTS draft_input_defect_slot (
+                id TEXT PRIMARY KEY,
+                input_part_id TEXT NOT NULL,
+                relasi_part_defect_id TEXT NOT NULL,
+                slot_waktu_id TEXT NOT NULL,
+                jumlah_defect INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (input_part_id) REFERENCES draft_input_part(id),
+                UNIQUE(input_part_id, relasi_part_defect_id, slot_waktu_id)
+            )
+        """.trimIndent()
+
+        koneksi.autoCommit = false
+        try {
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlDraftPemeriksaan)
+                statement.execute(sqlDraftInputPart)
+                statement.execute(sqlDraftInputDefectSlot)
+            }
+            koneksi.commit()
+        } catch (e: Exception) {
+            koneksi.rollback()
+            throw e
+        } finally {
+            koneksi.autoCommit = true
         }
     }
 }

@@ -20,6 +20,7 @@ import id.primaraya.qcontrol.data.lokal.database.MigrasiDatabaseLokal
 import id.primaraya.qcontrol.data.lokal.database.PenyediaPathDatabaseLokal
 import id.primaraya.qcontrol.data.lokal.repositori.RepositoriKonfigurasiLokal
 import id.primaraya.qcontrol.data.lokal.repositori.RepositoriStatusDatabaseLokal
+import id.primaraya.qcontrol.data.lokal.repositori.RepositoriInputHarianLokal
 import id.primaraya.qcontrol.ranah.usecase.BacaKonfigurasiLokalUseCase
 import id.primaraya.qcontrol.ranah.usecase.PeriksaDatabaseLokalUseCase
 import id.primaraya.qcontrol.ranah.usecase.SimpanKonfigurasiLokalUseCase
@@ -97,6 +98,10 @@ fun AplikasiQControl() {
     val bacaDaftarLineProduksiMasterUseCase = remember { BacaDaftarLineProduksiMasterUseCase(repositoriMasterData) }
     val bacaRelasiPartDefectMasterUseCase = remember { BacaRelasiPartDefectMasterUseCase(repositoriMasterData) }
     val bacaTemplateDefectPartUseCase = remember { BacaTemplateDefectPartUseCase(repositoriMasterData) }
+    
+    val repositoriInputHarianLokal = remember { RepositoriInputHarianLokal(koneksiDatabaseLokal) }
+    val kelolaInputHarianUseCase = remember { KelolaInputHarianUseCase(repositoriInputHarianLokal, repositoriMasterDataLokal) }
+
 
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
@@ -121,7 +126,8 @@ fun AplikasiQControl() {
             bacaDaftarSlotWaktuMasterUseCase,
             bacaDaftarLineProduksiMasterUseCase,
             bacaRelasiPartDefectMasterUseCase,
-            bacaTemplateDefectPartUseCase
+            bacaTemplateDefectPartUseCase,
+            kelolaInputHarianUseCase
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()
