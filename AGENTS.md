@@ -35,7 +35,7 @@ Aplikasi menggunakan struktur folder berikut:
 - **Dilarang Keras**: Menggunakan dependency Android (SDK, Room Android, dll).
 - **Master Data**: Bersifat **Read-only** (hanya tarik dari PGNServer). Dilarang melakukan CRUD Master Data di aplikasi ini.
 - **Transaksi**: Input Harian dilarang dilakukan sebelum template defect per part tervalidasi.
-- **Fase Saat Ini**: **2D-R3** (Cache `kodeTampilanDefect` dan validasi template defect per part).
+- **Fase Saat Ini**: **2D-R4** (Integrasi Defect Template selesai, siap untuk implementasi Input Harian).
 
 ## 6. Command Verifikasi
 ```bash

@@ -50,7 +50,9 @@ data class KeadaanAplikasi(
     val daftarRelasiPartDefectMaster: List<id.primaraya.qcontrol.ranah.model.RelasiPartDefect> = emptyList(),
     val partMasterTerpilih: id.primaraya.qcontrol.ranah.model.Part? = null,
     val kataKunciMasterData: String = "",
-    val tabMasterDataAktif: TabMasterData = TabMasterData.RINGKASAN
+    val tabMasterDataAktif: TabMasterData = TabMasterData.RINGKASAN,
+    val daftarTemplateDefectPart: List<id.primaraya.qcontrol.ranah.model.TemplateDefectPart> = emptyList(),
+    val pesanTemplateDefectPart: String? = null
 )
 
 sealed class StatusRingkasanOutbox {

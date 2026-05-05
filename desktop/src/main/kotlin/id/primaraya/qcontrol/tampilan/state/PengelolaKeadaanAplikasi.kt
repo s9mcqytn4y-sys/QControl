@@ -51,6 +51,7 @@ class PengelolaKeadaanAplikasi(
     private val bacaDaftarSlotWaktuMasterUseCase: BacaDaftarSlotWaktuMasterUseCase,
     private val bacaDaftarLineProduksiMasterUseCase: BacaDaftarLineProduksiMasterUseCase,
     private val bacaRelasiPartDefectMasterUseCase: BacaRelasiPartDefectMasterUseCase,
+    private val bacaTemplateDefectPartUseCase: BacaTemplateDefectPartUseCase,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
@@ -150,6 +151,12 @@ class PengelolaKeadaanAplikasi(
             }
             is AksiAplikasi.PilihPartMaster -> {
                 pilihPartMaster(aksi.part)
+            }
+            is AksiAplikasi.PilihPartMasterUntukTemplate -> {
+                pilihPartMaster(aksi.part)
+            }
+            is AksiAplikasi.MuatTemplateDefectPart -> {
+                muatTemplateDefectPart(aksi.partId)
             }
         }
     }
@@ -516,7 +523,14 @@ class PengelolaKeadaanAplikasi(
     }
 
     private fun pilihPartMaster(part: id.primaraya.qcontrol.ranah.model.Part?) {
-        _keadaan.update { it.copy(partMasterTerpilih = part, daftarRelasiPartDefectMaster = emptyList()) }
+        _keadaan.update { 
+            it.copy(
+                partMasterTerpilih = part, 
+                daftarRelasiPartDefectMaster = emptyList(),
+                daftarTemplateDefectPart = emptyList(),
+                pesanTemplateDefectPart = null
+            ) 
+        }
         
         if (part != null) {
             lingkup.launch {
@@ -528,6 +542,28 @@ class PengelolaKeadaanAplikasi(
                     is HasilOperasi.Gagal -> {
                         // Abaikan error pembacaan relasi
                     }
+                }
+            }
+            muatTemplateDefectPart(part.id)
+        }
+    }
+
+    private fun muatTemplateDefectPart(partId: String) {
+        _keadaan.update { it.copy(pesanTemplateDefectPart = "Memuat template...") }
+        lingkup.launch {
+            when (val hasil = bacaTemplateDefectPartUseCase.eksekusi(partId)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.TemplateDefectPart>
+                    _keadaan.update { 
+                        it.copy(
+                            daftarTemplateDefectPart = daftar,
+                            pesanTemplateDefectPart = if (daftar.isEmpty()) "Aman: Belum ada template defect untuk part ini." else null
+                        ) 
+                    }
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { it.copy(pesanTemplateDefectPart = "Gagal memuat template: ${hasil.kesalahan.pesan}") }
                 }
             }
         }

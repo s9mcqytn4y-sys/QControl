@@ -315,7 +315,8 @@ private fun TabDaftarPart(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Un
         if (keadaan.partMasterTerpilih != null) {
             PanelDetailPart(
                 part = keadaan.partMasterTerpilih,
-                daftarRelasi = keadaan.daftarRelasiPartDefectMaster,
+                daftarTemplate = keadaan.daftarTemplateDefectPart,
+                pesanStatus = keadaan.pesanTemplateDefectPart,
                 onTutup = { onAksi(AksiAplikasi.PilihPartMaster(null)) }
             )
         }
@@ -325,17 +326,19 @@ private fun TabDaftarPart(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Un
 @Composable
 private fun PanelDetailPart(
     part: Part,
-    daftarRelasi: List<RelasiPartDefect>,
+    daftarTemplate: List<TemplateDefectPart>,
+    pesanStatus: String?,
     onTutup: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.width(350.dp).fillMaxHeight(),
+        modifier = Modifier.width(450.dp).fillMaxHeight(),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
         shadowElevation = 4.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Header Panel
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -343,13 +346,13 @@ private fun PanelDetailPart(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Template Defect",
+                        text = "Template Defect Part",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = VibrantOrange
                     )
                     Text(
-                        text = part.namaPart,
+                        text = "${part.kodeUnikPart} - ${part.namaPart}",
                         style = MaterialTheme.typography.bodySmall,
                         color = TeksAbuAbu,
                         maxLines = 1,
@@ -363,61 +366,119 @@ private fun PanelDetailPart(
 
             Spacer(Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+            
+            // Pesan Status (Loading/Error/Info)
+            pesanStatus?.let { pesan ->
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = SolarYellow.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = pesan,
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFB45309)
+                    )
+                }
+            }
+
             Spacer(Modifier.height(12.dp))
 
-            if (daftarRelasi.isEmpty()) {
+            if (daftarTemplate.isEmpty() && pesanStatus == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "Tidak ada relasi defect untuk part ini.",
+                        "Belum ada template defect valid untuk part ini.\nPastikan relasi sudah diatur di server.",
                         style = MaterialTheme.typography.labelSmall,
                         color = TeksAbuAbu,
                         textAlign = TextAlign.Center
                     )
                 }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(daftarRelasi) { relasi ->
+            } else if (daftarTemplate.isNotEmpty()) {
+                // Header Tabel Detail
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("POS", modifier = Modifier.width(40.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TeksAbuAbu)
+                    Text("KODE", modifier = Modifier.width(60.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TeksAbuAbu)
+                    Text("NAMA DEFECT", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TeksAbuAbu)
+                    Text("AKTIF", modifier = Modifier.width(45.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TeksAbuAbu, textAlign = TextAlign.Center)
+                }
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(daftarTemplate) { t ->
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (t.aktif) Color.Transparent else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.05f))
                         ) {
                             Row(
-                                modifier = Modifier.padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Badge Kode Tampilan (A-L, B-M, dsb)
+                                // Posisi Tampilan (A-L, dll)
                                 Surface(
-                                    color = DeepAmber,
-                                    shape = RoundedCornerShape(4.dp)
+                                    color = if (t.aktif) DeepAmber else Color.Gray,
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier.width(36.dp)
                                 ) {
                                     Text(
-                                        text = relasi.kodeTampilanDefect ?: "-",
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        text = t.kodeTampilanDefect ?: "-",
+                                        modifier = Modifier.padding(vertical = 2.dp),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White
+                                        color = Color.White,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
 
-                                Column {
+                                Spacer(Modifier.width(12.dp))
+
+                                // Info Defect
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = relasi.kodeDefect ?: "-",
+                                        text = t.kodeDefect ?: "-",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        text = relasi.jenisDefectId,
+                                        text = "${t.namaDefect ?: "-"} (${t.namaKategori ?: "-"})",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = TeksAbuAbu
+                                        color = TeksAbuAbu,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+
+                                // Status
+                                Text(
+                                    text = if (t.aktif) "Ya" else "Tdk",
+                                    modifier = Modifier.width(45.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = if (t.aktif) Color(0xFF16A34A) else MaterialTheme.colorScheme.error
+                                )
                             }
                         }
                     }
                 }
+                
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "* Data ini digunakan untuk layout input defect harian.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TeksAbuAbu,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
             }
         }
     }

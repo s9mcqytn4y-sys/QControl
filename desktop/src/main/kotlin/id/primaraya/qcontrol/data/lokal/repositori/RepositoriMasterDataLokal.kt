@@ -426,4 +426,51 @@ class RepositoriMasterDataLokal(
             HasilOperasi.Gagal(KesalahanAplikasi.TidakDiketahui("Gagal membaca relasi part defect: ${e.message}"))
         }
     }
+
+    fun bacaTemplateDefectPart(partId: String): HasilOperasi<List<TemplateDefectPart>> {
+        return try {
+            koneksiDatabase.bukaKoneksi().use { koneksi ->
+                val sql = """
+                    SELECT 
+                        r.part_id, 
+                        r.kode_unik_part, 
+                        r.jenis_defect_id, 
+                        r.kode_tampilan_defect, 
+                        r.kode_defect, 
+                        j.nama_defect, 
+                        j.nama_kategori, 
+                        r.urutan_tampil, 
+                        r.aktif
+                    FROM master_relasi_part_defect r
+                    LEFT JOIN master_jenis_defect j ON r.jenis_defect_id = j.id
+                    WHERE r.part_id = ?
+                    ORDER BY r.urutan_tampil
+                """.trimIndent()
+                
+                val daftar = mutableListOf<TemplateDefectPart>()
+                koneksi.prepareStatement(sql).use { ps ->
+                    ps.setString(1, partId)
+                    val rs = ps.executeQuery()
+                    while (rs.next()) {
+                        daftar.add(
+                            TemplateDefectPart(
+                                partId = rs.getString("part_id"),
+                                kodeUnikPart = rs.getString("kode_unik_part"),
+                                jenisDefectId = rs.getString("jenis_defect_id"),
+                                kodeTampilanDefect = rs.getString("kode_tampilan_defect"),
+                                kodeDefect = rs.getString("kode_defect"),
+                                namaDefect = rs.getString("nama_defect"),
+                                namaKategori = rs.getString("nama_kategori"),
+                                urutanTampil = rs.getInt("urutan_tampil"),
+                                aktif = rs.getInt("aktif") == 1
+                            )
+                        )
+                    }
+                }
+                HasilOperasi.Berhasil(daftar)
+            }
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.TidakDiketahui("Gagal membaca template defect part: ${e.message}"))
+        }
+    }
 }

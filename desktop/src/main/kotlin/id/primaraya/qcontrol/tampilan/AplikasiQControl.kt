@@ -96,6 +96,7 @@ fun AplikasiQControl() {
     val bacaDaftarSlotWaktuMasterUseCase = remember { BacaDaftarSlotWaktuMasterUseCase(repositoriMasterData) }
     val bacaDaftarLineProduksiMasterUseCase = remember { BacaDaftarLineProduksiMasterUseCase(repositoriMasterData) }
     val bacaRelasiPartDefectMasterUseCase = remember { BacaRelasiPartDefectMasterUseCase(repositoriMasterData) }
+    val bacaTemplateDefectPartUseCase = remember { BacaTemplateDefectPartUseCase(repositoriMasterData) }
 
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
 
@@ -119,7 +120,8 @@ fun AplikasiQControl() {
             bacaDaftarMaterialMasterUseCase,
             bacaDaftarSlotWaktuMasterUseCase,
             bacaDaftarLineProduksiMasterUseCase,
-            bacaRelasiPartDefectMasterUseCase
+            bacaRelasiPartDefectMasterUseCase,
+            bacaTemplateDefectPartUseCase
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()
