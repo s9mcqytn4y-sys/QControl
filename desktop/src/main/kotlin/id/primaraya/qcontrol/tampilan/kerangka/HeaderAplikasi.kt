@@ -10,9 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import id.primaraya.qcontrol.tampilan.komponen.ChipStatusQControl
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tampilan.state.StatusKoneksiServer
-import id.primaraya.qcontrol.tema.UkuranQControl
+import id.primaraya.qcontrol.tema.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,38 +41,33 @@ fun HeaderAplikasi(
             // Status Koneksi & Sesi
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = UkuranQControl.SpasiNormal)
+                modifier = Modifier.padding(horizontal = UkuranQControl.SpasiNormal),
+                horizontalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiSedang)
             ) {
                 // Sesi HeadQC
                 if (keadaan.sesiHeadQCTidakValid) {
-                    Badge(containerColor = MaterialTheme.colorScheme.error) {
-                        Text("Sesi Berakhir", color = Color.White, style = MaterialTheme.typography.labelSmall)
-                    }
-                    Spacer(Modifier.width(8.dp))
+                    ChipStatusQControl(
+                        label = "Sesi Berakhir",
+                        warna = GagalMerah
+                    )
                 } else {
-                    Badge(containerColor = Color(0xFF10B981).copy(alpha = 0.2f)) {
-                        Text("Sesi Valid", color = Color(0xFF065F46), style = MaterialTheme.typography.labelSmall)
-                    }
-                    Spacer(Modifier.width(8.dp))
+                    ChipStatusQControl(
+                        label = "Sesi HeadQC Aktif",
+                        warna = BerhasilHijau
+                    )
                 }
 
-                val warnaStatus = when (keadaan.statusKoneksi) {
-                    StatusKoneksiServer.Tersambung -> Color(0xFF10B981) // Emerald 500
-                    StatusKoneksiServer.Terputus -> Color(0xFFEF4444) // Red 500
-                    StatusKoneksiServer.Memeriksa -> Color(0xFFF59E0B) // Amber 500
-                    StatusKoneksiServer.TidakDiperiksa -> Color.Gray
+                // Status Server
+                val (warnaServer, labelServer) = when (keadaan.statusKoneksi) {
+                    StatusKoneksiServer.Tersambung -> BerhasilHijau to "PGNServer Tersambung"
+                    StatusKoneksiServer.Terputus -> GagalMerah to "PGNServer Terputus"
+                    StatusKoneksiServer.Memeriksa -> PeringatanKuning to "Memeriksa Server..."
+                    StatusKoneksiServer.TidakDiperiksa -> Color.Gray to "Status Offline"
                 }
                 
-                Surface(
-                    modifier = Modifier.size(8.dp),
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    color = warnaStatus
-                ) {}
-                Spacer(Modifier.width(UkuranQControl.SpasiSedang))
-                Text(
-                    text = if (keadaan.pesanStatusKoneksi.isEmpty()) "Tidak diperiksa" else keadaan.pesanStatusKoneksi,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                ChipStatusQControl(
+                    label = labelServer,
+                    warna = warnaServer
                 )
             }
 

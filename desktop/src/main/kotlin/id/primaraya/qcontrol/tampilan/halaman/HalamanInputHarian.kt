@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.primaraya.qcontrol.ranah.model.*
+import id.primaraya.qcontrol.tampilan.komponen.*
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tema.*
@@ -40,41 +41,13 @@ fun HalamanInputHarian(
 
     if (!keadaan.masterDataLokalTersedia) {
         Box(modifier = Modifier.fillMaxSize().background(LatarBelakangKonten), contentAlignment = Alignment.Center) {
-            Card(
-                modifier = Modifier.width(400.dp).padding(UkuranQControl.SpasiNormal),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(64.dp), tint = VibrantOrange)
-                    Text("Master Data Belum Tersedia", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Tarik Master Data dari PGNServer terlebih dahulu agar Input Harian bisa digunakan secara offline.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = TeksAbuAbu
-                    )
-                    Button(
-                        onClick = { onAksi(AksiAplikasi.PilihRute(id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi.MasterData)) },
-                        colors = ButtonDefaults.buttonColors(containerColor = VibrantOrange),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Buka Master Data")
-                    }
-                    OutlinedButton(
-                        onClick = { onAksi(AksiAplikasi.MuatUlangDataLokal) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Muat Ulang Data Lokal")
-                    }
-                }
-            }
+            StateKosongQControl(
+                ikon = "📦",
+                judul = "Master Data Belum Tersedia",
+                pesan = "Tarik Master Data dari PGNServer terlebih dahulu agar Input Harian bisa digunakan secara offline.",
+                onAksi = { onAksi(AksiAplikasi.PilihRute(id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi.MasterData)) },
+                labelAksi = "Buka Master Data"
+            )
         }
         return
     }
@@ -125,7 +98,7 @@ private fun PanelKiriPart(
             verticalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiKecil)
         ) {
             Text(
-                "Daftar Part",
+                "Daftar Part Produksi",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = VibrantOrange
@@ -139,8 +112,8 @@ private fun PanelKiriPart(
                 OutlinedButton(
                     onClick = { expanded = true },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+                    shape = RoundedCornerShape(UkuranQControl.RadiusNormal),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TeksGelap)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -180,7 +153,7 @@ private fun PanelKiriPart(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(UkuranQControl.RadiusNormal),
                 textStyle = MaterialTheme.typography.bodyMedium
             )
 
@@ -355,17 +328,11 @@ private fun PanelTengahDefect(
                     CircularProgressIndicator(color = VibrantOrange)
                 }
             } else if (matrix.barisDefect.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("⚠️", style = MaterialTheme.typography.displaySmall)
-                        Text(
-                            keadaan.pesanKesiapanInputHarian ?: "Belum ada template defect untuk part ini",
-                            color = TeksAbuAbu,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                StateKosongQControl(
+                    ikon = "⚠️",
+                    judul = "Template Defect Kosong",
+                    pesan = keadaan.pesanKesiapanInputHarian ?: "Belum ada template defect untuk part ini. Periksa Master Data."
+                )
             } else {
                 Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
                     MatrixDefectTable(matrix = matrix, part = part, onAksi = onAksi)
@@ -384,7 +351,7 @@ private fun MatrixDefectTable(
     Column(modifier = Modifier.fillMaxSize()) {
         // Header Row
         Row(
-            modifier = Modifier.background(Color(0xFFF3F4F6)).padding(vertical = 8.dp),
+            modifier = Modifier.background(LatarBelakangSidebar.copy(alpha = 0.05f)).padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Jenis Defect", modifier = Modifier.weight(0.3f).padding(start = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
@@ -403,13 +370,13 @@ private fun MatrixDefectTable(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(matrix.barisDefect) { baris ->
                 BarisDefectMatrix(baris = baris, part = part, onAksi = onAksi)
-                HorizontalDivider(color = Color(0xFFF1F5F9))
+                PembatasHalusQControl()
             }
         }
 
         // Footer Row (Summary per Slot)
         Row(
-            modifier = Modifier.background(Color(0xFFF9FAFB)).padding(vertical = 8.dp),
+            modifier = Modifier.background(LatarBelakangSidebar.copy(alpha = 0.03f)).padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("TOTAL PER SLOT", modifier = Modifier.weight(0.3f).padding(start = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium, color = VibrantOrange)
@@ -421,7 +388,7 @@ private fun MatrixDefectTable(
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Black,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (totalSlot > 0) MaterialTheme.colorScheme.error else Color.Black
+                    color = if (totalSlot > 0) GagalMerah else TeksGelap
                 )
             }
             Text(
@@ -430,7 +397,7 @@ private fun MatrixDefectTable(
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Black,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error
+                color = GagalMerah
             )
         }
     }
@@ -467,7 +434,7 @@ private fun BarisDefectMatrix(
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (baris.subtotal > 0) MaterialTheme.colorScheme.error else Color.Black
+            color = if (baris.subtotal > 0) GagalMerah else TeksGelap
         )
     }
 }
@@ -480,13 +447,13 @@ private fun CellInputDefect(
 ) {
     Row(
         modifier = Modifier
-            .background(if (jumlah > 0) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f) else Color.Transparent, RoundedCornerShape(4.dp))
-            .border(1.dp, if (jumlah > 0) MaterialTheme.colorScheme.error.copy(alpha = 0.3f) else Color.Transparent, RoundedCornerShape(4.dp))
+            .background(if (jumlah > 0) GagalMerah.copy(alpha = 0.1f) else Color.Transparent, RoundedCornerShape(UkuranQControl.RadiusKecil))
+            .border(1.dp, if (jumlah > 0) GagalMerah.copy(alpha = 0.3f) else Color.Transparent, RoundedCornerShape(UkuranQControl.RadiusKecil))
             .padding(2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onKurang, modifier = Modifier.size(24.dp)) {
-            Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(12.dp), tint = if (jumlah > 0) MaterialTheme.colorScheme.error else Color.Gray)
+            Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(12.dp), tint = if (jumlah > 0) GagalMerah else TeksAbuAbu)
         }
         Text(
             jumlah.toString(),
@@ -494,10 +461,10 @@ private fun CellInputDefect(
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = if (jumlah > 0) FontWeight.Bold else FontWeight.Normal,
-            color = if (jumlah > 0) MaterialTheme.colorScheme.error else Color.Black
+            color = if (jumlah > 0) GagalMerah else TeksGelap
         )
         IconButton(onClick = onTambah, modifier = Modifier.size(24.dp)) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(12.dp), tint = if (jumlah > 0) MaterialTheme.colorScheme.error else VibrantOrange)
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(12.dp), tint = if (jumlah > 0) GagalMerah else VibrantOrange)
         }
     }
 }
@@ -510,11 +477,11 @@ private fun PanelKananRingkasan(
 ) {
     Card(
         modifier = modifier.fillMaxHeight(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(UkuranQControl.SpasiNormal)) {
-            Text("Ringkasan Hari Ini", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = VibrantOrange)
+            Text("Ringkasan Pemeriksaan", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = VibrantOrange)
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
 
             // Stats Cards
@@ -524,17 +491,17 @@ private fun PanelKananRingkasan(
             val rasio = if (totalCheck > 0) (totalDefect.toDouble() / totalCheck.toDouble() * 100.0) else 0.0
             
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ItemStatistikRingkasan("TOTAL CHECK", totalCheck.toString(), Color.Black)
-                ItemStatistikRingkasan("TOTAL OK", totalOk.toString(), Color(0xFF16A34A))
-                ItemStatistikRingkasan("TOTAL DEFECT", totalDefect.toString(), MaterialTheme.colorScheme.error)
-                ItemStatistikRingkasan("RATIO DEFECT", String.format("%.2f%%", rasio), if (rasio > 0) SolarYellow else TeksAbuAbu)
+                ItemStatistikRingkasan("TOTAL CHECK", totalCheck.toString(), TeksGelap)
+                ItemStatistikRingkasan("TOTAL OK", totalOk.toString(), BerhasilHijau)
+                ItemStatistikRingkasan("TOTAL DEFECT", totalDefect.toString(), GagalMerah)
+                ItemStatistikRingkasan("RASIO DEFECT", String.format("%.2f%%", rasio), if (rasio > 0) PeringatanKuning else TeksAbuAbu)
             }
 
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
-            HorizontalDivider()
+            HorizontalDivider(color = GarisHalus)
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
 
-            Text("Detail Defect per Jam", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Detail Defect per Slot", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(UkuranQControl.SpasiKecil))
 
             LazyColumn(
@@ -544,12 +511,12 @@ private fun PanelKananRingkasan(
                 val daftarPerSlot = keadaan.ringkasanInputHarian?.daftarPerSlot ?: emptyList()
                 if (daftarPerSlot.isEmpty()) {
                     item {
-                        Text("Belum ada data defect tercatat", style = MaterialTheme.typography.bodySmall, color = TeksAbuAbu, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+                        Text("Belum ada temuan defect harian.", style = MaterialTheme.typography.bodySmall, color = TeksAbuAbu, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
                     }
                 } else {
                     items(daftarPerSlot) { slot ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().background(Color(0xFFF9FAFB), RoundedCornerShape(4.dp)).padding(8.dp),
+                            modifier = Modifier.fillMaxWidth().background(LatarBelakangKonten, RoundedCornerShape(UkuranQControl.RadiusKecil)).padding(8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -558,7 +525,7 @@ private fun PanelKananRingkasan(
                                 slot.jumlah.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error
+                                color = GagalMerah
                             )
                         }
                     }
@@ -572,29 +539,29 @@ private fun PanelKananRingkasan(
                 OutlinedButton(
                     onClick = { onAksi(AksiAplikasi.ResetDraftInputHarian) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(UkuranQControl.RadiusNormal),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = TeksAbuAbu)
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Reset Draft")
+                    Text("Reset Draft Lokal")
                 }
 
                 Button(
                     onClick = { /* Submit belum diimplementasikan */ },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = VibrantOrange),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(UkuranQControl.RadiusNormal),
                     enabled = false
                 ) {
                     Icon(Icons.Default.CloudUpload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Simpan & Kirim")
+                    Text("Kirim ke PGNServer")
                 }
             }
             
             Text(
-                "Submit dinonaktifkan (Fondasi Lokal Only)",
+                "Draft tersimpan di perangkat (SQLite Lokal)",
                 style = MaterialTheme.typography.labelSmall,
                 color = TeksAbuAbu,
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),

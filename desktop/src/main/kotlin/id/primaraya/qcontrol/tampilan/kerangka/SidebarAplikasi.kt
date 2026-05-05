@@ -21,7 +21,7 @@ import id.primaraya.qcontrol.konfigurasi.KonfigurasiAplikasi
 import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tampilan.state.StatusKoneksiServer
-import id.primaraya.qcontrol.tema.UkuranQControl
+import id.primaraya.qcontrol.tema.*
 
 @Composable
 fun SidebarAplikasi(
@@ -107,7 +107,7 @@ fun SidebarAplikasi(
                         imageVector = Icons.Default.Circle,
                         contentDescription = null,
                         modifier = Modifier.size(10.dp),
-                        tint = if (keadaan.statusKoneksi == StatusKoneksiServer.Tersambung) Color.Green else Color.Red
+                        tint = if (keadaan.statusKoneksi == StatusKoneksiServer.Tersambung) BerhasilHijau else GagalMerah
                     )
                     Spacer(Modifier.width(UkuranQControl.SpasiSedang))
                     Text(

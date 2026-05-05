@@ -27,10 +27,17 @@ fun TemaQControl(
     val skemaWarna = if (temaGelap) {
         darkColorScheme(
             primary = SolarYellow,
+            onPrimary = TeksGelap,
+            primaryContainer = DeepAmber,
+            onPrimaryContainer = Color.White,
             secondary = VibrantOrange,
+            onSecondary = Color.White,
             tertiary = DeepAmber,
-            background = TeksGelap,
-            surface = LatarBelakangSidebar
+            background = LatarBelakangGelap,
+            onBackground = TeksTerang,
+            surface = LatarBelakangSidebar,
+            onSurface = TeksTerang,
+            error = GagalMerah
         )
     } else {
         SkemaWarnaTerang

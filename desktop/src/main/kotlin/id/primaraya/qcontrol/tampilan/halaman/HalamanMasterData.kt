@@ -1,14 +1,16 @@
 package id.primaraya.qcontrol.tampilan.halaman
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,15 +22,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.primaraya.qcontrol.ranah.model.*
+import id.primaraya.qcontrol.tampilan.komponen.*
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tampilan.state.TabMasterData
-import id.primaraya.qcontrol.tema.DeepAmber
-import id.primaraya.qcontrol.tema.TeksAbuAbu
-import id.primaraya.qcontrol.tema.LatarBelakangKonten
-import id.primaraya.qcontrol.tema.SolarYellow
-import id.primaraya.qcontrol.tema.UkuranQControl
-import id.primaraya.qcontrol.tema.VibrantOrange
+import id.primaraya.qcontrol.tema.*
 
 @Composable
 fun HalamanMasterData(
@@ -55,9 +53,10 @@ fun HalamanMasterData(
             OutlinedTextField(
                 value = keadaan.kataKunciMasterData,
                 onValueChange = { onAksi(AksiAplikasi.UbahKataKunciMasterData(it)) },
-                label = { Text("Cari…") },
+                label = { Text("Cari Master Data...") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(UkuranQControl.RadiusNormal)
             )
         }
 
@@ -70,31 +69,31 @@ fun HalamanMasterData(
             val isError = sesiInvalid || pesan.startsWith("Gagal") || pesan.contains("error", ignoreCase = true) || pesan.contains("Unauthorized", ignoreCase = true)
             val isLoading = !sesiInvalid && (pesan.contains("Menarik", ignoreCase = true) || pesan.contains("Memuat", ignoreCase = true))
             
-            val warnaTeks = if (isError) MaterialTheme.colorScheme.error 
-                            else if (isLoading) Color(0xFFB45309) 
-                            else Color(0xFF16A34A)
-            val warnaLatar = if (isError) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-                             else if (isLoading) Color(0xFFFEF3C7) 
-                             else Color(0xFFDCFCE7)
+            val warnaTeks = if (isError) GagalMerah 
+                            else if (isLoading) PeringatanKuning 
+                            else BerhasilHijau
+            val warnaLatar = warnaTeks.copy(alpha = 0.1f)
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                color = warnaLatar
+                shape = RoundedCornerShape(UkuranQControl.RadiusNormal),
+                color = warnaLatar,
+                border = BorderStroke(1.dp, warnaTeks.copy(alpha = 0.2f))
             ) {
                 Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = pesan,
                         color = warnaTeks,
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        fontWeight = FontWeight.Medium
                     )
                     if (sesiInvalid) {
                         Button(
                             onClick = { onAksi(AksiAplikasi.Logout) },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            colors = ButtonDefaults.buttonColors(containerColor = GagalMerah),
                             modifier = Modifier.height(28.dp),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RoundedCornerShape(UkuranQControl.RadiusKecil)
                         ) {
                             Text("Logout & Login Ulang", style = MaterialTheme.typography.labelSmall)
                         }
@@ -134,48 +133,41 @@ private fun BagianHeader(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Master Data Referensi",
+                    text = "Master Data QC",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = "Read-only dari PGNServer",
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                ChipStatusQControl(
+                    label = "Hanya Baca (Read-only)",
+                    warna = TeksAbuAbu
+                )
             }
             keadaan.ringkasanMasterData?.let { r ->
                 Text(
-                    text = "Terakhir diperbarui: ${r.ditarikPada}",
+                    text = "Sumber data: PGNServer • Terakhir diperbarui: ${r.ditarikPada}",
                     style = MaterialTheme.typography.labelSmall,
                     color = TeksAbuAbu
                 )
             } ?: Text(
-                text = "Data belum pernah ditarik dari server.",
+                text = "Belum ada data lokal. Tarik dari server untuk mulai.",
                 style = MaterialTheme.typography.labelSmall,
                 color = TeksAbuAbu
             )
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
+            OutlinedButton(
                 onClick = { onAksi(AksiAplikasi.MuatMasterDataLokal) },
                 enabled = !keadaan.sedangMenarikMasterData,
-                colors = ButtonDefaults.outlinedButtonColors(),
-                border = ButtonDefaults.outlinedButtonBorder
+                shape = RoundedCornerShape(UkuranQControl.RadiusNormal)
             ) {
                 Text("Muat Data Lokal")
             }
             Button(
                 onClick = { onAksi(AksiAplikasi.TarikMasterDataDariServer) },
                 enabled = !keadaan.sedangMenarikMasterData,
-                colors = ButtonDefaults.buttonColors(containerColor = DeepAmber)
+                colors = ButtonDefaults.buttonColors(containerColor = VibrantOrange),
+                shape = RoundedCornerShape(UkuranQControl.RadiusNormal)
             ) {
                 if (keadaan.sedangMenarikMasterData) {
                     CircularProgressIndicator(
@@ -184,9 +176,11 @@ private fun BagianHeader(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
                         color = Color.White
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Menarik…")
+                    Text("Menarik Data...")
                 } else {
-                    Text("↓  Tarik dari Server")
+                    Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Tarik dari Server")
                 }
             }
         }
@@ -202,8 +196,8 @@ private fun BagianTabMasterData(tabAktif: TabMasterData, onAksi: (AksiAplikasi) 
         selectedTabIndex = TabMasterData.values().indexOf(tabAktif),
         edgePadding = 0.dp,
         containerColor = Color.Transparent,
-        contentColor = DeepAmber,
-        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)) }
+        contentColor = VibrantOrange,
+        divider = { HorizontalDivider(color = GarisHalus) }
     ) {
         TabMasterData.values().forEach { tab ->
             Tab(
@@ -229,44 +223,45 @@ private fun TabRingkasan(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
     val ringkasan = keadaan.ringkasanMasterData
 
     if (ringkasan == null) {
-        KosongState(
+        StateKosongQControl(
             ikon = "📂",
-            judul = "Master data belum tersedia",
+            judul = "Master Data Belum Tersedia",
             pesan = "Tarik master data dari PGNServer agar QControl siap digunakan offline.",
-            onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }
+            onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) },
+            labelAksi = "Tarik Master Data"
         )
         return
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiNormal)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiNormal)
         ) {
-            KartuRingkasan(modifier = Modifier.weight(1f), label = "Part", nilai = "${ringkasan.jumlahPart}", warna = DeepAmber)
-            KartuRingkasan(modifier = Modifier.weight(1f), label = "Jenis Defect", nilai = "${ringkasan.jumlahJenisDefect}", warna = VibrantOrange)
+            KartuRingkasan(modifier = Modifier.weight(1f), label = "Part Terdaftar", nilai = "${ringkasan.jumlahPart}", warna = VibrantOrange)
+            KartuRingkasan(modifier = Modifier.weight(1f), label = "Jenis Defect", nilai = "${ringkasan.jumlahJenisDefect}", warna = GagalMerah)
             KartuRingkasan(modifier = Modifier.weight(1f), label = "Material", nilai = "${ringkasan.jumlahMaterial}", warna = SolarYellow)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiNormal)
         ) {
-            KartuRingkasan(modifier = Modifier.weight(1f), label = "Slot Waktu", nilai = "${ringkasan.jumlahSlotWaktu}", warna = Color(0xFF0EA5E9))
+            KartuRingkasan(modifier = Modifier.weight(1f), label = "Slot Waktu", nilai = "${ringkasan.jumlahSlotWaktu}", warna = InfoBiru)
             KartuRingkasan(modifier = Modifier.weight(1f), label = "Line Produksi", nilai = "${ringkasan.jumlahLineProduksi}", warna = Color(0xFF8B5CF6))
             Spacer(modifier = Modifier.weight(1f))
         }
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(UkuranQControl.RadiusBesar),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-            border = ButtonDefaults.outlinedButtonBorder
+            border = BorderStroke(1.dp, GarisHalus)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("ℹ️  Informasi Cache", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            Column(modifier = Modifier.padding(UkuranQControl.SpasiNormal), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("ℹ️  Informasi Cache Lokal", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
-                BarisMeta("Versi master data", ringkasan.versiMasterData)
-                BarisMeta("Ditarik pada", ringkasan.ditarikPada)
+                BarisMeta("Versi Master Data", ringkasan.versiMasterData)
+                BarisMeta("Waktu Tarik Terakhir", ringkasan.ditarikPada)
             }
         }
     }
@@ -306,7 +301,13 @@ private fun BarisMeta(kunci: String, nilai: String) {
 private fun TabDaftarPart(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Unit) {
     val daftar = keadaan.daftarPartMaster
     if (daftar.isEmpty()) { 
-        KosongState("🔩", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) })
+        StateKosongQControl(
+            ikon = "🔩", 
+            judul = "Part Belum Tersedia", 
+            pesan = "Tarik master data dari PGNServer agar QControl siap digunakan offline.", 
+            onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) },
+            labelAksi = "Tarik Master Data"
+        )
         return 
     }
 
@@ -507,7 +508,10 @@ private fun PanelDetailPart(
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun TabDaftarJenisDefect(daftar: List<JenisDefect>, onAksi: (AksiAplikasi) -> Unit) {
-    if (daftar.isEmpty()) { KosongState("⚠️", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    if (daftar.isEmpty()) { 
+        StateKosongQControl("⚠️", "Jenis Defect Belum Tersedia", "Tarik master data dari PGNServer.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }, labelAksi = "Tarik Data")
+        return 
+    }
     val kolom = listOf("Kode Defect" to 0.2f, "Nama Defect" to 0.4f, "Kategori" to 0.3f, "Status" to 0.1f)
     TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeDefect, it.namaDefect, it.namaKategori ?: "-", if (it.aktif) "Aktif" else "Nonaktif") })
 }
@@ -517,7 +521,10 @@ private fun TabDaftarJenisDefect(daftar: List<JenisDefect>, onAksi: (AksiAplikas
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun TabDaftarMaterial(daftar: List<Material>, onAksi: (AksiAplikasi) -> Unit) {
-    if (daftar.isEmpty()) { KosongState("🏭", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    if (daftar.isEmpty()) { 
+        StateKosongQControl("🏭", "Material Belum Tersedia", "Tarik master data dari PGNServer.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }, labelAksi = "Tarik Data")
+        return 
+    }
     val kolom = listOf("Kode Material" to 0.2f, "Nama Material" to 0.6f, "Status" to 0.2f)
     TabelMasterData(kolom = kolom, baris = daftar.map { listOf(it.kodeMaterial ?: "-", it.namaMaterial, if (it.aktif) "Aktif" else "Nonaktif") })
 }
@@ -527,7 +534,10 @@ private fun TabDaftarMaterial(daftar: List<Material>, onAksi: (AksiAplikasi) -> 
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun TabDaftarSlotWaktu(daftar: List<SlotWaktu>, onAksi: (AksiAplikasi) -> Unit) {
-    if (daftar.isEmpty()) { KosongState("🕐", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    if (daftar.isEmpty()) { 
+        StateKosongQControl("🕐", "Slot Waktu Belum Tersedia", "Tarik master data dari PGNServer.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }, labelAksi = "Tarik Data")
+        return 
+    }
     val kolom = listOf("Label Slot" to 0.3f, "Jam Mulai" to 0.2f, "Jam Selesai" to 0.2f, "Urutan" to 0.15f, "Status" to 0.15f)
     TabelMasterData(
         kolom = kolom,
@@ -540,7 +550,10 @@ private fun TabDaftarSlotWaktu(daftar: List<SlotWaktu>, onAksi: (AksiAplikasi) -
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun TabDaftarLineProduksi(daftar: List<LineProduksi>, onAksi: (AksiAplikasi) -> Unit) {
-    if (daftar.isEmpty()) { KosongState("🏗️", "Master data belum tersedia", "Tarik master data dari PGNServer agar QControl siap digunakan offline.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }); return }
+    if (daftar.isEmpty()) { 
+        StateKosongQControl("🏗️", "Line Produksi Belum Tersedia", "Tarik master data dari PGNServer.", onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) }, labelAksi = "Tarik Data")
+        return 
+    }
     val kolom = listOf("Kode Line" to 0.2f, "Nama Line" to 0.6f, "Status" to 0.2f)
     TabelMasterData(
         kolom = kolom,
@@ -618,42 +631,8 @@ private fun TabelMasterData(
                         }
                     }
                     if (indeks < baris.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-                        )
+                        PembatasHalusQControl(modifier = Modifier.padding(horizontal = UkuranQControl.SpasiNormal))
                     }
-                }
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Komponen Generic: Empty State
-// ─────────────────────────────────────────────────────────────────────────────
-@Composable
-private fun KosongState(ikon: String, judul: String, pesan: String, onAksi: (() -> Unit)? = null) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(ikon, style = MaterialTheme.typography.displayMedium)
-            Text(judul, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(
-                pesan,
-                style = MaterialTheme.typography.bodySmall,
-                color = TeksAbuAbu,
-                textAlign = TextAlign.Center
-            )
-            if (onAksi != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = onAksi,
-                    colors = ButtonDefaults.buttonColors(containerColor = SolarYellow, contentColor = Color.Black)
-                ) {
-                    Text("Tarik Master Data dari Server", fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -1,38 +1,30 @@
 package id.primaraya.qcontrol.tampilan.halaman
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
-import id.primaraya.qcontrol.tema.UkuranQControl
+import id.primaraya.qcontrol.tampilan.komponen.StateKosongQControl
+import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
+import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
+import id.primaraya.qcontrol.tema.*
 
 @Composable
-fun HalamanGeneric(rute: RuteAplikasi) {
+fun HalamanGeneric(
+    keadaan: KeadaanAplikasi,
+    onAksi: (AksiAplikasi) -> Unit
+) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(UkuranQControl.SpasiNormal),
+        modifier = Modifier.fillMaxSize().background(LatarBelakangKonten),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = rute.judul,
-                style = MaterialTheme.typography.headlineLarge
-            )
-            Spacer(Modifier.height(UkuranQControl.SpasiNormal))
-            Text(
-                text = rute.deskripsi,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(Modifier.height(UkuranQControl.SpasiSangatBesar))
-            Text(
-                text = "Fitur ini sedang dalam tahap pengembangan.",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        }
+        StateKosongQControl(
+            ikon = "🚧",
+            judul = "Halaman Sedang Dikembangkan",
+            pesan = "Fitur untuk ${keadaan.ruteAktif.labelMenu} akan tersedia pada fase pengembangan berikutnya.",
+            onAksi = { onAksi(AksiAplikasi.PilihRute(id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi.Dashboard)) },
+            labelAksi = "Kembali ke Dashboard"
+        )
     }
 }
