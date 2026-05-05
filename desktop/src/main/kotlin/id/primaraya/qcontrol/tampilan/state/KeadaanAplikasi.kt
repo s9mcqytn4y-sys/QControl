@@ -60,10 +60,12 @@ data class KeadaanAplikasi(
     val draftPemeriksaanHarian: id.primaraya.qcontrol.ranah.model.DraftPemeriksaanHarian? = null,
     val daftarInputPartDraft: List<id.primaraya.qcontrol.ranah.model.DraftInputPart> = emptyList(),
     val inputPartTerpilih: id.primaraya.qcontrol.ranah.model.DraftInputPart? = null,
+    val matrixInputDefectPart: id.primaraya.qcontrol.ranah.model.MatrixInputDefectPart? = null,
     val daftarDefectSlotDraft: List<id.primaraya.qcontrol.ranah.model.DraftInputDefectSlot> = emptyList(),
     val ringkasanInputHarian: id.primaraya.qcontrol.ranah.model.RingkasanInputHarian? = null,
     val tanggalPemeriksaanHarian: String = java.time.LocalDate.now().toString(),
-    val kataKunciPartInputHarian: String = ""
+    val kataKunciPartInputHarian: String = "",
+    val pesanValidasiInputHarian: String? = null
 )
 
 sealed class StatusRingkasanOutbox {

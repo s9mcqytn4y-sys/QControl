@@ -53,8 +53,84 @@ class KelolaInputHarianUseCase(
         return repositoriInputHarianLokal.simpanAtauPerbaruiPart(pemeriksaanHarianId, partId, qty)
     }
 
-    suspend fun updateDefectSlot(pemeriksaanHarianId: String, partId: String, relasiPartDefectId: String, qty: Int): HasilOperasi<Unit> {
-        return repositoriInputHarianLokal.simpanAtauPerbaruiDefect(pemeriksaanHarianId, partId, relasiPartDefectId, qty)
+    fun bacaDaftarDefectSlot(inputPartId: String): HasilOperasi<List<DraftInputDefectSlot>> {
+        return repositoriInputHarianLokal.ambilDraftInputDefectSlot(inputPartId)
+    }
+
+    suspend fun updateDefectSlot(
+        pemeriksaanHarianId: String,
+        partId: String,
+        relasiPartDefectId: String,
+        slotWaktuId: String,
+        qty: Int
+    ): HasilOperasi<Unit> {
+        return repositoriInputHarianLokal.simpanAtauPerbaruiDefect(
+            pemeriksaanHarianId,
+            partId,
+            relasiPartDefectId,
+            slotWaktuId,
+            qty
+        )
+    }
+
+    fun bacaMatrixInputDefect(
+        draftInputPart: DraftInputPart,
+        daftarSlotWaktu: List<SlotWaktu>,
+        daftarTemplateDefect: List<TemplateDefectPart>,
+        daftarInputDefectSlot: List<DraftInputDefectSlot>
+    ): MatrixInputDefectPart {
+        val kolomSlotWaktu = daftarSlotWaktu.filter { it.aktif }
+            .sortedBy { it.urutanTampil }
+            .map {
+                KolomSlotWaktuInput(
+                    slotWaktuId = it.id,
+                    labelSlot = it.labelSlot,
+                    kodeSlot = it.kodeSlot,
+                    urutan = it.urutanTampil
+                )
+            }
+
+        val barisDefect = daftarTemplateDefect.sortedBy { it.urutanTampil }.map { template ->
+            val nilaiPerSlot = kolomSlotWaktu.map { kolom ->
+                val inputEksisting = daftarInputDefectSlot.find {
+                    it.relasiPartDefectId == template.id && it.slotWaktuId == kolom.slotWaktuId
+                }
+                NilaiInputDefectSlot(kolom.slotWaktuId, inputEksisting?.jumlahDefect ?: 0)
+            }
+            BarisInputDefect(
+                relasiPartDefectId = template.id,
+                namaDefect = template.namaDefect ?: "Defect",
+                kodeDefect = template.kodeDefect ?: "",
+                nilaiPerSlot = nilaiPerSlot,
+                subtotal = nilaiPerSlot.sumOf { it.jumlahDefect }
+            )
+        }
+
+        val totalPerSlot = kolomSlotWaktu.associate { kolom ->
+            kolom.slotWaktuId to barisDefect.sumOf { baris ->
+                baris.nilaiPerSlot.find { it.slotWaktuId == kolom.slotWaktuId }?.jumlahDefect ?: 0
+            }
+        }
+
+        val totalDefectPart = barisDefect.sumOf { it.subtotal }
+        val totalOkPart = Math.max(0, draftInputPart.qtyCheck - totalDefectPart)
+        val rasioDefect = if (draftInputPart.qtyCheck > 0) {
+            (totalDefectPart.toDouble() / draftInputPart.qtyCheck.toDouble()) * 100.0
+        } else 0.0
+
+        return MatrixInputDefectPart(
+            partId = draftInputPart.partId,
+            namaPart = draftInputPart.namaPart,
+            nomorPart = draftInputPart.nomorPart,
+            barisDefect = barisDefect,
+            kolomSlotWaktu = kolomSlotWaktu,
+            ringkasan = RingkasanSlotWaktuInput(
+                totalPerSlot = totalPerSlot,
+                totalDefectPart = totalDefectPart,
+                totalOkPart = totalOkPart,
+                rasioDefect = rasioDefect
+            )
+        )
     }
 
     fun hitungRingkasan(pemeriksaanHarianId: String): HasilOperasi<RingkasanInputHarian> {

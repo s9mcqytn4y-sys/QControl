@@ -1,6 +1,7 @@
 package id.primaraya.qcontrol.ranah.model
 
 data class TemplateDefectPart(
+    val id: String,
     val partId: String,
     val kodeUnikPart: String?,
     val jenisDefectId: String,

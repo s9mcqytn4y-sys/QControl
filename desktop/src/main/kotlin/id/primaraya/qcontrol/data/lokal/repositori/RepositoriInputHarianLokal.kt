@@ -231,8 +231,6 @@ class RepositoriInputHarianLokal(
                     GROUP BY m.nama_defect
                     HAVING jumlah > 0
                 """.trimIndent()
-                // Catatan: JOIN di atas mungkin perlu disesuaikan jika relasi_part_defect_id bukan ID defect langsung.
-                // Namun untuk fase ini, kita fokus pada kelancaran kompilasi dan flow dasar.
                 
                 val daftarDefect = mutableListOf<DefectTerhitung>()
                 koneksi.prepareStatement(sqlDefect).use { ps ->
@@ -243,7 +241,40 @@ class RepositoriInputHarianLokal(
                     }
                 }
 
-                HasilOperasi.Berhasil(RingkasanInputHarian(totalQtyCheck, totalQtyDefect, daftarDefect))
+                // 3. Ambil Daftar Defect per Slot
+                val sqlPerSlot = """
+                    SELECT s.id, s.label_slot, SUM(d.jumlah_defect) as jumlah
+                    FROM draft_input_defect_slot d
+                    JOIN draft_input_part p ON d.input_part_id = p.id
+                    JOIN master_slot_waktu s ON d.slot_waktu_id = s.id
+                    WHERE p.pemeriksaan_harian_id = ?
+                    GROUP BY s.id, s.label_slot
+                    HAVING jumlah > 0
+                """.trimIndent()
+
+                val daftarPerSlot = mutableListOf<DefectPerSlotTerhitung>()
+                koneksi.prepareStatement(sqlPerSlot).use { ps ->
+                    ps.setString(1, pemeriksaanHarianId)
+                    val rs = ps.executeQuery()
+                    while (rs.next()) {
+                        daftarPerSlot.add(
+                            DefectPerSlotTerhitung(
+                                rs.getString("id"),
+                                rs.getString("label_slot"),
+                                rs.getInt("jumlah")
+                            )
+                        )
+                    }
+                }
+
+                HasilOperasi.Berhasil(
+                    RingkasanInputHarian(
+                        totalQtyCheck,
+                        totalQtyDefect,
+                        daftarDefect,
+                        daftarPerSlot
+                    )
+                )
             }
         } catch (e: Exception) {
             HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal hitung ringkasan: ${e.message}"))
@@ -275,7 +306,13 @@ class RepositoriInputHarianLokal(
         }
     }
 
-    suspend fun simpanAtauPerbaruiDefect(pemeriksaanHarianId: String, partId: String, relasiPartDefectId: String, qty: Int): HasilOperasi<Unit> {
+    suspend fun simpanAtauPerbaruiDefect(
+        pemeriksaanHarianId: String,
+        partId: String,
+        relasiPartDefectId: String,
+        slotWaktuId: String,
+        qty: Int
+    ): HasilOperasi<Unit> {
         return try {
             koneksiDatabase.bukaKoneksi().use { koneksi ->
                 val sqlPart = "SELECT id FROM draft_input_part WHERE pemeriksaan_harian_id = ? AND part_id = ?"
@@ -304,7 +341,7 @@ class RepositoriInputHarianLokal(
                     ps.setString(1, UUID.randomUUID().toString())
                     ps.setString(2, inputPartId)
                     ps.setString(3, relasiPartDefectId)
-                    ps.setString(4, "SLOT-01") 
+                    ps.setString(4, slotWaktuId)
                     ps.setInt(5, qty)
                     ps.executeUpdate()
                 }

@@ -432,6 +432,7 @@ class RepositoriMasterDataLokal(
             koneksiDatabase.bukaKoneksi().use { koneksi ->
                 val sql = """
                     SELECT 
+                        r.id,
                         r.part_id, 
                         r.kode_unik_part, 
                         r.jenis_defect_id, 
@@ -454,6 +455,7 @@ class RepositoriMasterDataLokal(
                     while (rs.next()) {
                         daftar.add(
                             TemplateDefectPart(
+                                id = rs.getString("id"),
                                 partId = rs.getString("part_id"),
                                 kodeUnikPart = rs.getString("kode_unik_part"),
                                 jenisDefectId = rs.getString("jenis_defect_id"),

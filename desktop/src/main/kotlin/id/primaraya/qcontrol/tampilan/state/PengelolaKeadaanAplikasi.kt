@@ -177,7 +177,7 @@ class PengelolaKeadaanAplikasi(
                 updateQtyCheck(aksi.partId, aksi.qty)
             }
             is AksiAplikasi.UpdateDefectSlot -> {
-                updateDefectSlot(aksi.partId, aksi.defectId, aksi.qty)
+                updateDefectSlot(aksi.partId, aksi.slotId, aksi.defectId, aksi.qty)
             }
         }
     }
@@ -634,37 +634,88 @@ class PengelolaKeadaanAplikasi(
     }
 
     private fun pilihInputPart(part: id.primaraya.qcontrol.ranah.model.DraftInputPart?) {
-        _keadaan.update { it.copy(inputPartTerpilih = part) }
+        _keadaan.update { it.copy(inputPartTerpilih = part, matrixInputDefectPart = null, pesanValidasiInputHarian = null) }
+        if (part != null) {
+            muatMatrixInputDefect(part)
+        }
+    }
+
+    private fun muatMatrixInputDefect(part: id.primaraya.qcontrol.ranah.model.DraftInputPart) {
+        lingkup.launch {
+            // 1. Ambil Slot Waktu Aktif
+            val hasilSlot = bacaDaftarSlotWaktuMasterUseCase.eksekusi()
+            if (hasilSlot !is HasilOperasi.Berhasil<*>) return@launch
+            @Suppress("UNCHECKED_CAST")
+            val slots = hasilSlot.data as List<id.primaraya.qcontrol.ranah.model.SlotWaktu>
+
+            // 2. Ambil Template Defect Part
+            val hasilTemplate = bacaTemplateDefectPartUseCase.eksekusi(part.partId)
+            if (hasilTemplate !is HasilOperasi.Berhasil<*>) return@launch
+            @Suppress("UNCHECKED_CAST")
+            val templates = hasilTemplate.data as List<id.primaraya.qcontrol.ranah.model.TemplateDefectPart>
+
+            // 3. Ambil Data Input Defect Eksisting
+            val hasilInput = kelolaInputHarianUseCase.bacaDaftarDefectSlot(part.id)
+            val inputs = if (hasilInput is HasilOperasi.Berhasil<*>) {
+                @Suppress("UNCHECKED_CAST")
+                hasilInput.data as List<id.primaraya.qcontrol.ranah.model.DraftInputDefectSlot>
+            } else emptyList()
+
+            // 4. Bangun Matrix
+            val matrix = kelolaInputHarianUseCase.bacaMatrixInputDefect(part, slots, templates, inputs)
+            _keadaan.update { it.copy(matrixInputDefectPart = matrix) }
+        }
     }
 
     private fun updateQtyCheck(partId: String, qty: Int) {
+        if (qty < 0) return
         val harianId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
         lingkup.launch {
             kelolaInputHarianUseCase.updateQtyCheck(harianId, partId, qty)
             muatDaftarInputPart()
             muatRingkasanInputHarian()
             
-            // Update selection state if needed
+            // Update selection state and matrix
+            val partTerupdate = _keadaan.value.daftarInputPartDraft.find { it.partId == partId }
             if (_keadaan.value.inputPartTerpilih?.partId == partId) {
-                _keadaan.update { state ->
-                    state.copy(inputPartTerpilih = state.daftarInputPartDraft.find { it.partId == partId })
-                }
+                _keadaan.update { it.copy(inputPartTerpilih = partTerupdate) }
+                if (partTerupdate != null) muatMatrixInputDefect(partTerupdate)
             }
         }
     }
 
-    private fun updateDefectSlot(partId: String, relasiId: String, qty: Int) {
+    private fun updateDefectSlot(partId: String, slotId: String, relasiId: String, qty: Int) {
+        if (qty < 0) return
+        
         val harianId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        val currentPart = _keadaan.value.inputPartTerpilih ?: return
+        
+        // QC Validation: Total Defect cannot exceed Total Check
+        val currentMatrix = _keadaan.value.matrixInputDefectPart
+        if (currentMatrix != null) {
+            val oldVal = currentMatrix.barisDefect
+                .find { it.relasiPartDefectId == relasiId }
+                ?.nilaiPerSlot?.find { it.slotWaktuId == slotId }?.jumlahDefect ?: 0
+            
+            val diff = qty - oldVal
+            if (currentMatrix.ringkasan.totalDefectPart + diff > currentPart.qtyCheck) {
+                _keadaan.update { it.copy(pesanValidasiInputHarian = "Total Defect tidak boleh melebihi Total Check (${currentPart.qtyCheck})") }
+                return
+            }
+        }
+
+        _keadaan.update { it.copy(pesanValidasiInputHarian = null) }
+
         lingkup.launch {
-            kelolaInputHarianUseCase.updateDefectSlot(harianId, partId, relasiId, qty)
+            kelolaInputHarianUseCase.updateDefectSlot(harianId, partId, relasiId, slotId, qty)
             muatDaftarInputPart()
             muatRingkasanInputHarian()
             
-            // Update selection state if needed
+            // Update selection state and matrix
+            val partTerupdate = _keadaan.value.daftarInputPartDraft.find { it.partId == partId }
             if (_keadaan.value.inputPartTerpilih?.partId == partId) {
-                _keadaan.update { state ->
-                    state.copy(inputPartTerpilih = state.daftarInputPartDraft.find { it.partId == partId })
-                }
+                _keadaan.update { it.copy(inputPartTerpilih = partTerupdate) }
+                if (partTerupdate != null) muatMatrixInputDefect(partTerupdate)
             }
         }
     }

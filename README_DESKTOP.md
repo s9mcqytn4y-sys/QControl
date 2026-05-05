@@ -1,4 +1,4 @@
-# QControl Desktop - Fase 2D-R3: Master Data Cache & Defect Template Validasi
+# QControl Desktop - Fase 2E-B: Matrix Defect x Slot Waktu Dinamis
 
 Dokumen ini menjelaskan struktur dan cara kerja aplikasi QControl versi Desktop.
 
@@ -28,12 +28,14 @@ Sesuai kontrak PGNServer Fase 2C, aplikasi ini hanya mengizinkan akses untuk per
 3. Jika berhasil, token Sanctum akan disimpan di database lokal (`sesi_autentikasi`).
 4. Sesi akan bertahan meskipun aplikasi ditutup (Persistent Session).
 
-## Cara Uji Validasi Master Data & Template (Fase 2D-R3)
+## Cara Uji Matrix Input Harian (Fase 2E-B)
 1. Login sebagai HeadQC.
-2. Buka Master Data, lakukan penarikan data terbaru.
-3. Pastikan `kodeTampilanDefect` tersimpan di cache SQLite lokal.
-4. Pilih salah satu Part, validasi apakah template defect yang muncul sudah sesuai.
-5. Mode Offline: Pastikan data tetap muncul dari cache lokal saat koneksi server diputus.
+2. Pastikan Master Data sudah ditarik dari server (termasuk Slot Waktu dan Relasi Part-Defect).
+3. Buka menu **Input Harian**.
+4. Pilih Line dan Part yang memiliki template defect.
+5. Gunakan matrix pada panel tengah untuk mengisi jumlah defect berdasarkan jam kejadian.
+6. **Validasi QC**: Pastikan Total Defect tidak melebihi Total Check. Jika melebihi, akan muncul peringatan dan data tidak tersimpan.
+7. **Offline Friendly**: Semua input disimpan ke draft lokal SQLite secara real-time.
 
 ## Catatan Penting
 - **Role Lock**: Hanya role `HeadQC` yang dapat login.
