@@ -1,14 +1,12 @@
-# QControl - CODEX Instructions
+# CODEX - QControl Context
 
-Refer to [AGENTS.md](./AGENTS.md) for the primary source of truth regarding:
-- Role: HeadQC (Solo Developer)
-- Language: Full Indonesian
-- Architecture: `inti`, `konfigurasi`, `ranah`, `data`, `tampilan`, `tema`, `utilitas`
-- Tech Stack: Kotlin 2.x, Compose Desktop, Ktor, SQLite JDBC
-- Phase: 2D-R3 (Defect Template Validation)
+Repo: QControl (Desktop Windows, Kotlin 2.x, Compose Desktop).
+Role: HeadQC (Tunggal).
+Bahasa: Bahasa Indonesia Penuh.
+Arsitektur: inti, konfigurasi, ranah, data, tampilan, tema, utilitas.
 
-**Mandatory Command for Verification:**
-```bash
-./gradlew :desktop:compileKotlin --console=plain
-./gradlew :desktop:assemble --console=plain
-```
+**INSTRUKSI UTAMA**:
+Baca dan ikuti panduan lengkap di **AGENTS.md** sebelum memulai tugas. Jangan gunakan library Android.
+
+## Verifikasi:
+`./gradlew :desktop:compileKotlin --console=plain`

@@ -1,52 +1,59 @@
-# QControl - Instruksi Agent (HeadQC)
+# AGENTS - QControl
 
-## Identitas & Peran
-- **Repo**: QControl (Desktop Windows App, BUKAN Android).
-- **Role**: HeadQC (Solo Developer).
-- **Bahasa**: Bahasa Indonesia penuh (Kode, File, Fungsi, Variabel, Komentar, Log, UI).
-- **Branch**: main.
+Instruksi terpusat untuk agen AI agar memahami konteks proyek QControl secara ringkas dan hemat token. File ini adalah **Source of Truth** untuk semua instruksi agent.
 
-## Tech Stack
-- **Core**: Kotlin 2.x, JDK 17.
+## 1. Identitas Repo
+- **Nama**: QControl
+- **Tipe**: Desktop Windows App (**BUKAN Android**).
+- **Tujuan**: Aplikasi Quality Control untuk inspeksi Part dan Defect.
+- **Bahasa Proyek**: **Bahasa Indonesia penuh** untuk penamaan file, fungsi, variabel, komentar, dan log (kecuali istilah teknis standar).
+
+## 2. Tech Stack
+- **Bahasa**: Kotlin 2.x, JDK 17.
 - **UI**: Compose for Desktop (JetBrains).
-- **Networking**: Ktor Client.
+- **Networking**: Ktor Client (REST API).
 - **Database**: SQLite JDBC (Cache Lokal).
-- **Concurrency**: Coroutines & StateFlow.
-- **Backend**: PGNServer (http://127.0.0.1:8000) - Source of Truth Master Data.
+- **Concurrency**: Coroutines & StateFlow (UDF Pattern).
+- **Backend**: PGNServer (http://127.0.0.1:8000).
 
-## Arsitektur (Clean Architecture)
-- `inti/`: Hasil operasi, kesalahan global, validasi dasar.
-- `konfigurasi/`: Pengaturan aplikasi, URL server, konstanta peran.
-- `ranah/`: Domain model bisnis dan use case.
-- `data/`: Implementasi repository, remote (Ktor), lokal (SQLite), sinkronisasi.
-- `tampilan/`: UI screens (halaman), viewmodels (state holder), navigasi, komponen reusable.
+## 3. Arsitektur Proyek
+Aplikasi menggunakan struktur folder berikut:
+- `inti/`: Hasil operasi, kesalahan global, dan validasi dasar.
+- `konfigurasi/`: Pengaturan aplikasi, URL server, dan konstanta peran.
+- `ranah/`: Domain model bisnis dan use case (Logic bisnis murni).
+- `data/`: Implementasi repository, remote (Ktor), lokal (SQLite), dan sinkronisasi.
+- `tampilan/`: UI screens (halaman), ViewModels (state holder), navigasi, dan komponen reusable.
 - `tema/`: Design system (warna, tipografi, ukuran, MaterialTheme).
-- `utilitas/`: Helper format angka, tanggal, dsb.
+- `utilitas/`: Helper format angka, tanggal, dan fungsi pembantu lainnya.
 
-## Batasan & Larangan
-- **Dilarang** menggunakan library Android (SDK Android, Room Android, dll).
-- **Dilarang** membuat role selain HeadQC.
-- **Dilarang** melakukan CRUD pada Master Data (hanya Read-only cache).
-- **Dilarang** input transaksi harian sebelum validasi template defect per part selesai.
+## 4. Aturan Role & Auth
+- **Role Tunggal**: **HeadQC**.
+- **Larangan**: Jangan membuat role baru (Admin, Inspector, Viewer, dll).
+- **Auth**: HeadQC login via PGNServer untuk mendapatkan token Sanctum yang disimpan di SQLite lokal.
 
-## Fase Aktif: 2D-R3
-- **Fokus**: Cache dan tampilkan `kodeTampilanDefect`.
-- **Validasi**: Pastikan item defect muncul sesuai part yang dipilih (Defect Template).
+## 5. Batasan & Kebijakan
+- **Dilarang Keras**: Menggunakan dependency Android (SDK, Room Android, dll).
+- **Master Data**: Bersifat **Read-only** (hanya tarik dari PGNServer). Dilarang melakukan CRUD Master Data di aplikasi ini.
+- **Transaksi**: Input Harian dilarang dilakukan sebelum template defect per part tervalidasi.
+- **Fase Saat Ini**: **2D-R3** (Cache `kodeTampilanDefect` dan validasi template defect per part).
 
-## Perintah Verifikasi
+## 6. Command Verifikasi
 ```bash
 ./gradlew :desktop:compileKotlin --console=plain
 ./gradlew :desktop:assemble --console=plain
 ```
 
-## Format Patch Report Wajib (Bahasa Indonesia)
-PATCH REPORT - QControl - [KODE_TUGAS]
+## 7. Format Patch Report Wajib
+Setiap perubahan wajib dilaporkan dengan format:
+```text
+PATCH REPORT - QControl - AgentOps-R1
 
-1. Ringkasan keputusan teknis: [Isi]
-2. File dibuat: [Isi]
-3. File diubah: [Isi]
-4. Koreksi penting yang dilakukan: [Isi]
-5. Command yang dijalankan: [Isi]
-6. Hasil verifikasi: [Isi]
-7. Risiko tersisa: [Isi]
-8. Rekomendasi fase berikutnya: [Isi]
+1. Ringkasan keputusan teknis
+2. File dibuat
+3. File diubah
+4. Koreksi penting yang dilakukan
+5. Command yang dijalankan
+6. Hasil verifikasi
+7. Risiko tersisa
+8. Rekomendasi fase berikutnya
+```
