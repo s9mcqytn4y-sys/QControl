@@ -68,8 +68,20 @@ data class KeadaanAplikasi(
     val pesanValidasiInputHarian: String? = null,
     val masterDataLokalTersedia: Boolean = false,
     val sesiHeadQCTidakValid: Boolean = false,
-    val pesanKesiapanInputHarian: String? = null
+    val pesanKesiapanInputHarian: String? = null,
+
+    // Flash Message (Fase 2E-C)
+    val pesanFlash: PesanFlash? = null
 )
+
+data class PesanFlash(
+    val pesan: String,
+    val tipe: TipePesanFlash
+)
+
+enum class TipePesanFlash {
+    SUKSES, ERROR, PERINGATAN, INFO
+}
 
 sealed class StatusRingkasanOutbox {
     object TidakDimuat : StatusRingkasanOutbox()

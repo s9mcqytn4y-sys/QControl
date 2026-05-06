@@ -18,7 +18,7 @@ fun KontenAplikasi(
 ) {
     Box(modifier = Modifier.padding(padding)) {
         when (keadaan.ruteAktif) {
-            RuteAplikasi.Dashboard -> HalamanDashboard(keadaan = keadaan, onAksi = onAksi)
+            RuteAplikasi.Dashboard -> HalamanDashboard()
             RuteAplikasi.InputHarian -> HalamanInputHarian(keadaan = keadaan, onAksi = onAksi)
             RuteAplikasi.RecordingDataDefect -> HalamanRecordingDataDefect(keadaan = keadaan, onAksi = onAksi)
             RuteAplikasi.ControlChart -> HalamanControlChart(keadaan = keadaan, onAksi = onAksi)

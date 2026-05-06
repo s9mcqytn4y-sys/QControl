@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="qc_kuning_utama">#FFC400</color>
+    <color name="qc_oranye_aksen">#FF8A00</color>
+    <color name="qc_biru_primer">#062B75</color>
+    <color name="qc_merah_defect">#EF1B24</color>
+    <color name="qc_hijau_ok">#128A43</color>
+</resources>

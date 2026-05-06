@@ -183,10 +183,18 @@ class PengelolaKeadaanAplikasi(
                 // Untuk fase ini cukup bersihkan state terpilih dan muat ulang
                 _keadaan.update { it.copy(inputPartTerpilih = null, matrixInputDefectPart = null) }
                 muatDaftarInputPart()
+                tangani(AksiAplikasi.TampilkanPesanFlash("Draft input berhasil direset", TipePesanFlash.INFO))
             }
             is AksiAplikasi.MuatUlangDataLokal -> {
                 muatMasterDataLokal()
                 muatKonfigurasiLokal()
+                tangani(AksiAplikasi.TampilkanPesanFlash("Data lokal berhasil dimuat ulang", TipePesanFlash.SUKSES))
+            }
+            is AksiAplikasi.BersihkanPesanFlash -> {
+                _keadaan.update { it.copy(pesanFlash = null) }
+            }
+            is AksiAplikasi.TampilkanPesanFlash -> {
+                _keadaan.update { it.copy(pesanFlash = PesanFlash(aksi.pesan, aksi.tipe)) }
             }
         }
     }
@@ -225,6 +233,7 @@ class PengelolaKeadaanAplikasi(
         lingkup.launch {
             resetOutboxSedangDikirimUseCase()
             muatRingkasanOutbox()
+            tangani(AksiAplikasi.TampilkanPesanFlash("Status antrean berhasil direset", TipePesanFlash.INFO))
         }
     }
 
@@ -234,6 +243,7 @@ class PengelolaKeadaanAplikasi(
             resetOutboxSedangDikirimUseCase()
             pengelolaSinkronisasi.sinkronkanSekarang()
             muatRingkasanOutbox()
+            tangani(AksiAplikasi.TampilkanPesanFlash("Sinkronisasi manual selesai", TipePesanFlash.SUKSES))
         }
     }
 
@@ -425,6 +435,7 @@ class PengelolaKeadaanAplikasi(
                                 pesanLogin = "Akses ditolak: Hanya HeadQC yang dapat masuk ke QControl Desktop."
                             ) 
                         }
+                        tangani(AksiAplikasi.TampilkanPesanFlash("Akses ditolak: Role Anda bukan HeadQC", TipePesanFlash.ERROR))
                         keluarSesiUseCase.eksekusi() // Bersihkan sesi yang mungkin sudah tersimpan
                         return@launch
                     }
@@ -437,6 +448,7 @@ class PengelolaKeadaanAplikasi(
                         ) 
                     }
                     pengelolaSinkronisasi.tokenAktif = sesi.token
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Selamat datang, ${sesi.namaPengguna}!", TipePesanFlash.SUKSES))
                 }
                 is HasilOperasi.Gagal -> {
                     _keadaan.update { 
@@ -445,6 +457,7 @@ class PengelolaKeadaanAplikasi(
                             pesanLogin = hasil.kesalahan.pesan
                         )
                     }
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Gagal masuk: ${hasil.kesalahan.pesan}", TipePesanFlash.ERROR))
                 }
             }
         }
@@ -455,6 +468,7 @@ class PengelolaKeadaanAplikasi(
             keluarSesiUseCase.eksekusi()
             _keadaan.update { it.copy(sesiAktif = null) }
             pengelolaSinkronisasi.tokenAktif = null
+            tangani(AksiAplikasi.TampilkanPesanFlash("Sesi HeadQC telah diakhiri", TipePesanFlash.INFO))
         }
     }
 
@@ -478,6 +492,7 @@ class PengelolaKeadaanAplikasi(
                             masterDataLokalTersedia = true
                         )
                     }
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Master data berhasil ditarik dari server", TipePesanFlash.SUKSES))
                     muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
                 }
                 is HasilOperasi.Gagal -> {
@@ -490,6 +505,12 @@ class PengelolaKeadaanAplikasi(
                             pesanMasterData = pesan,
                             sesiHeadQCTidakValid = sesiInvalid
                         )
+                    }
+                    
+                    if (sesiInvalid) {
+                        tangani(AksiAplikasi.TampilkanPesanFlash("Sesi berakhir, silakan login ulang", TipePesanFlash.PERINGATAN))
+                    } else {
+                        tangani(AksiAplikasi.TampilkanPesanFlash("Gagal tarik data: $pesan", TipePesanFlash.ERROR))
                     }
                 }
             }

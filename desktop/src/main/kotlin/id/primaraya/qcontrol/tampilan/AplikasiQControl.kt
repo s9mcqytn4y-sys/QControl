@@ -1,8 +1,8 @@
 package id.primaraya.qcontrol.tampilan
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import id.primaraya.qcontrol.data.remote.http.buatKlienHttpAplikasi
@@ -13,6 +13,7 @@ import id.primaraya.qcontrol.ranah.usecase.*
 import id.primaraya.qcontrol.tampilan.kerangka.KerangkaAplikasi
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.PengelolaKeadaanAplikasi
+import id.primaraya.qcontrol.tampilan.state.TipePesanFlash
 import id.primaraya.qcontrol.tema.TemaQControl
 
 import id.primaraya.qcontrol.data.lokal.database.KoneksiDatabaseLokal
@@ -131,6 +132,25 @@ fun AplikasiQControl() {
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Efek untuk menampilkan Pesan Flash via Snackbar
+    LaunchedEffect(keadaan.pesanFlash) {
+        keadaan.pesanFlash?.let { flash ->
+            val labelTombol = when (flash.tipe) {
+                TipePesanFlash.ERROR -> "TUTUP"
+                else -> "OK"
+            }
+            val hasil = snackbarHostState.showSnackbar(
+                message = flash.pesan,
+                actionLabel = labelTombol,
+                duration = if (flash.tipe == TipePesanFlash.ERROR) SnackbarDuration.Long else SnackbarDuration.Short
+            )
+            if (hasil == SnackbarResult.ActionPerformed || hasil == SnackbarResult.Dismissed) {
+                pengelolaState.tangani(AksiAplikasi.BersihkanPesanFlash)
+            }
+        }
+    }
 
     // Jalankan periksa koneksi saat pertama kali buka
     LaunchedEffect(Unit) {
@@ -142,22 +162,26 @@ fun AplikasiQControl() {
     }
 
     TemaQControl {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            if (keadaan.sesiAktif == null) {
-                HalamanLogin(
-                    keadaan = keadaan,
-                    onAksi = { aksi -> pengelolaState.tangani(aksi) }
-                )
-            } else {
-                KerangkaAplikasi(
-                    keadaan = keadaan,
-                    onAksi = { aksi ->
-                        pengelolaState.tangani(aksi)
-                    }
-                )
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { padding ->
+            Surface(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                if (keadaan.sesiAktif == null) {
+                    HalamanLogin(
+                        keadaan = keadaan,
+                        onAksi = { aksi -> pengelolaState.tangani(aksi) }
+                    )
+                } else {
+                    KerangkaAplikasi(
+                        keadaan = keadaan,
+                        onAksi = { aksi ->
+                            pengelolaState.tangani(aksi)
+                        }
+                    )
+                }
             }
         }
     }

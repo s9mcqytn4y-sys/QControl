@@ -1,5 +1,6 @@
 package id.primaraya.qcontrol
 
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -9,14 +10,15 @@ import id.primaraya.qcontrol.tampilan.AplikasiQControl
 
 fun main() = application {
     val stateJendela = rememberWindowState(
-        width = 1280.dp,
-        height = 800.dp
+        width = 1366.dp, // Sedikit lebih lebar untuk standar pabrik
+        height = 768.dp
     )
 
     Window(
         onCloseRequest = ::exitApplication,
         state = stateJendela,
-        title = KonfigurasiAplikasi.JUDUL_WINDOW
+        title = KonfigurasiAplikasi.JUDUL_WINDOW,
+        icon = painterResource("logo_qcontrol.png")
     ) {
         AplikasiQControl()
     }

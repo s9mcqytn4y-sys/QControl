@@ -7,7 +7,7 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.utils.io.errors.*
+import java.io.IOException
 
 /**
  * Layanan untuk mengirimkan payload dari outbox lokal ke server pusat.

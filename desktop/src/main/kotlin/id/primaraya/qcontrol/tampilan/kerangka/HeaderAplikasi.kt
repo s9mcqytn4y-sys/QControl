@@ -1,5 +1,6 @@
 package id.primaraya.qcontrol.tampilan.kerangka
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,18 +23,21 @@ fun HeaderAplikasi(
     onPeriksaKoneksi: () -> Unit
 ) {
     TopAppBar(
-        modifier = Modifier.height(UkuranQControl.TinggiHeader),
+        modifier = Modifier
+            .height(UkuranQControl.TinggiHeader)
+            .background(LatarBelakangSidebar.copy(alpha = 0.8f)),
         title = {
             Column {
                 Text(
                     text = keadaan.ruteAktif.judul,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black,
+                    color = TeksKontrasTinggi
                 )
                 Text(
                     text = keadaan.ruteAktif.deskripsi,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = TeksKontrasRendah
                 )
             }
         },
@@ -60,9 +64,9 @@ fun HeaderAplikasi(
                 // Status Server
                 val (warnaServer, labelServer) = when (keadaan.statusKoneksi) {
                     StatusKoneksiServer.Tersambung -> BerhasilHijau to "PGNServer Tersambung"
-                    StatusKoneksiServer.Terputus -> GagalMerah to "PGNServer Terputus"
-                    StatusKoneksiServer.Memeriksa -> PeringatanKuning to "Memeriksa Server..."
-                    StatusKoneksiServer.TidakDiperiksa -> Color.Gray to "Status Offline"
+                    StatusKoneksiServer.Terputus -> GagalMerah to "Mode Lokal"
+                    StatusKoneksiServer.Memeriksa -> PeringatanKuning to "Memeriksa..."
+                    StatusKoneksiServer.TidakDiperiksa -> TeksKontrasRendah to "Offline"
                 }
                 
                 ChipStatusQControl(
@@ -73,21 +77,21 @@ fun HeaderAplikasi(
 
             IconButton(onClick = onPeriksaKoneksi) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
+                    imageVector = Icons.Default.CloudSync,
                     contentDescription = "Periksa Koneksi",
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
 
             IconButton(onClick = {}) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notifikasi")
+                Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = TeksKontrasRendah)
             }
             Spacer(Modifier.width(UkuranQControl.SpasiNormal))
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground
+            containerColor = Color.Transparent,
+            titleContentColor = TeksKontrasTinggi,
+            actionIconContentColor = TeksKontrasTinggi
         )
     )
 }

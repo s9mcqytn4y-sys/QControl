@@ -10,7 +10,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.utils.io.errors.*
+import java.io.IOException
 import kotlinx.serialization.SerializationException
 
 import id.primaraya.qcontrol.data.remote.dto.ProfilPenggunaDto

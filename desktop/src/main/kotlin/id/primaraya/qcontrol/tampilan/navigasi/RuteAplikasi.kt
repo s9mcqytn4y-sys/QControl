@@ -1,6 +1,7 @@
 package id.primaraya.qcontrol.tampilan.navigasi
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -43,7 +44,7 @@ sealed class RuteAplikasi(
         rute = "control_chart",
         judul = "CONTROL CHART",
         labelMenu = "Control Chart",
-        ikon = Icons.Default.ShowChart,
+        ikon = Icons.AutoMirrored.Filled.ShowChart,
         deskripsi = "Analisis statistik proses produksi",
         urutan = 4
     )

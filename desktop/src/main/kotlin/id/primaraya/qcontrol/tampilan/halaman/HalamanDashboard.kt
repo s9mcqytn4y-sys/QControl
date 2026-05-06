@@ -18,10 +18,7 @@ import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tema.*
 
 @Composable
-fun HalamanDashboard(
-    keadaan: KeadaanAplikasi,
-    onAksi: (AksiAplikasi) -> Unit
-) {
+fun HalamanDashboard() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +76,7 @@ fun HalamanDashboard(
             KartuDashboardDummy(modifier = Modifier.weight(1f), judul = "Reject Rate", nilai = "2.8%", warna = PeringatanKuning)
         }
         
-        PanelQControl(modifier = Modifier.weight(1f)) {
+        PanelPremiumQControl(modifier = Modifier.weight(1f)) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "Visualisasi grafik performa mingguan akan tampil di sini.",
@@ -98,7 +95,7 @@ private fun KartuDashboardDummy(
     nilai: String,
     warna: Color
 ) {
-    PanelQControl(modifier = modifier) {
+    PanelPremiumQControl(modifier = modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(text = judul, style = MaterialTheme.typography.labelMedium, color = TeksAbuAbu)
             Text(text = nilai, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = warna)

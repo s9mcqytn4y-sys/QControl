@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QControl</string>
+    <string name="logo_qcontrol_content_description">Logo QControl</string>
+    <string name="icon_home_content_description">Beranda</string>
+    <string name="icon_search_content_description">Cari</string>
+    <string name="icon_profile_content_description">Profil</string>
+    <string name="icon_settings_content_description">Pengaturan</string>
+</resources>

@@ -1,13 +1,14 @@
 package id.primaraya.qcontrol.tampilan.kerangka
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,8 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.primaraya.qcontrol.konfigurasi.KonfigurasiAplikasi
 import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
@@ -29,54 +33,65 @@ fun SidebarAplikasi(
     onPilihRute: (RuteAplikasi) -> Unit,
     onLogout: () -> Unit
 ) {
-    NavigationRail(
-        modifier = Modifier.width(UkuranQControl.LebarSidebar),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+    Surface(
+        modifier = Modifier.width(UkuranQControl.LebarSidebar).fillMaxHeight(),
+        color = LatarBelakangSidebar,
+        tonalElevation = 4.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(UkuranQControl.SpasiNormal)
         ) {
-            // Logo & Nama Aplikasi
+            // Logo & Header Sidebar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = UkuranQControl.SpasiSangatBesar)
             ) {
                 Surface(
-                    modifier = Modifier.size(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(44.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = Color.White.copy(alpha = 0.05f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GarisSubtle)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Q",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(8.dp)) {
+                        Image(
+                            painter = painterResource("logo_qcontrol.png"),
+                            contentDescription = "Logo QControl",
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
                 Spacer(Modifier.width(UkuranQControl.SpasiSedang))
                 Column {
                     Text(
-                        text = KonfigurasiAplikasi.NAMA_APLIKASI,
+                        text = "QControl",
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold
+                        color = TeksKontrasTinggi,
+                        fontWeight = FontWeight.Black
                     )
                     Text(
-                        text = "QUALITY ASSURANCE DEPT.",
+                        text = "MANUFACTURING OS",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
                     )
                 }
             }
 
-            // Menu Items
+            // Menu Utama
+            Text(
+                text = "MENU UTAMA",
+                style = MaterialTheme.typography.labelSmall,
+                color = TeksKontrasRendah,
+                modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+                fontWeight = FontWeight.Bold
+            )
+
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiKecil)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 keadaan.daftarRute.forEach { rute ->
                     ItemMenuSidebar(
@@ -87,106 +102,105 @@ fun SidebarAplikasi(
                 }
             }
 
-            // Info Pengguna & Line
+            // Footer Section
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = UkuranQControl.SpasiNormal)
             ) {
-                // Line Aktif
-                Text(
-                    text = "Line Aktif",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = UkuranQControl.SpasiKecil)
+                // User & Line Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    color = LatarBelakangUtama.copy(alpha = 0.4f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GarisSubtle)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Circle,
-                        contentDescription = null,
-                        modifier = Modifier.size(10.dp),
-                        tint = if (keadaan.statusKoneksi == StatusKoneksiServer.Tersambung) BerhasilHijau else GagalMerah
-                    )
-                    Spacer(Modifier.width(UkuranQControl.SpasiSedang))
-                    Text(
-                        text = keadaan.lineAktif,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(Modifier.height(UkuranQControl.SpasiBesar))
-
-                // Profil Singkat
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(UkuranQControl.RadiusBesar))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
-                        .padding(UkuranQControl.SpasiSedang),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        modifier = Modifier.size(32.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            val inisial = (keadaan.sesiAktif?.namaPengguna ?: keadaan.namaPengguna).take(1)
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    val inisial = (keadaan.sesiAktif?.namaPengguna ?: keadaan.namaPengguna).take(1)
+                                    Text(
+                                        text = inisial,
+                                        color = LatarBelakangUtama,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = keadaan.sesiAktif?.namaPengguna ?: keadaan.namaPengguna,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TeksKontrasTinggi,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "HeadQC",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TeksKontrasRendah
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Text(
-                                text = inisial,
-                                color = Color.White,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = "Line Aktif:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TeksKontrasRendah
                             )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(6.dp).background(BerhasilHijau, CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = keadaan.lineAktif,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TeksKontrasTinggi,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
-                    Spacer(Modifier.width(UkuranQControl.SpasiSedang))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = keadaan.sesiAktif?.namaPengguna ?: keadaan.namaPengguna,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = keadaan.sesiAktif?.peran ?: keadaan.peranPengguna,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
                 }
 
-                Spacer(Modifier.height(UkuranQControl.SpasiSedang))
+                Spacer(Modifier.height(12.dp))
 
-                // Tombol Logout
+                // Logout Action
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(UkuranQControl.RadiusBesar))
+                        .clip(MaterialTheme.shapes.small)
                         .clickable(onClick = onLogout)
-                        .padding(UkuranQControl.SpasiSedang),
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ExitToApp,
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "Keluar Sesi",
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = GagalMerah,
                         modifier = Modifier.size(20.dp)
                     )
-                    Spacer(Modifier.width(UkuranQControl.SpasiSedang))
+                    Spacer(Modifier.width(12.dp))
                     Text(
                         text = "Keluar Sesi",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.SemiBold
+                        color = GagalMerah,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -200,31 +214,41 @@ fun ItemMenuSidebar(
     terpilih: Boolean,
     onClick: () -> Unit
 ) {
-    val warnaLatar = if (terpilih) MaterialTheme.colorScheme.primary else Color.Transparent
-    val warnaKonten = if (terpilih) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val warnaLatar = if (terpilih) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
+    val warnaKonten = if (terpilih) MaterialTheme.colorScheme.primary else TeksKontrasSedang
+    val borderModifier = if (terpilih) {
+        Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), shape = MaterialTheme.shapes.small)
+    } else Modifier
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(UkuranQControl.RadiusNormal))
+            .height(44.dp)
+            .clip(MaterialTheme.shapes.small)
             .background(warnaLatar)
+            .then(borderModifier)
             .clickable(onClick = onClick)
-            .padding(horizontal = UkuranQControl.SpasiNormal),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = rute.ikon,
             contentDescription = rute.labelMenu,
             tint = warnaKonten,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(20.dp)
         )
-        Spacer(Modifier.width(UkuranQControl.SpasiNormal))
+        Spacer(Modifier.width(12.dp))
         Text(
             text = rute.labelMenu,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (terpilih) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (terpilih) FontWeight.ExtraBold else FontWeight.Medium,
             color = warnaKonten
         )
+        if (terpilih) {
+            Spacer(modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier.size(4.dp).background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
+        }
     }
 }
