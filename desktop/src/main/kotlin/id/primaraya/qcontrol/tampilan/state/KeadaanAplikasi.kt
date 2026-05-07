@@ -62,6 +62,7 @@ data class KeadaanAplikasi(
     val pesanInputHarian: String? = null,
     val draftPemeriksaanHarian: id.primaraya.qcontrol.ranah.model.DraftPemeriksaanHarian? = null,
     val daftarInputPartDraft: List<id.primaraya.qcontrol.ranah.model.DraftInputPart> = emptyList(),
+    val daftarProduksiTanpaNg: List<id.primaraya.qcontrol.ranah.model.DraftProduksiTanpaNg> = emptyList(),
     val inputPartTerpilih: id.primaraya.qcontrol.ranah.model.DraftInputPart? = null,
     val matrixInputDefectPart: id.primaraya.qcontrol.ranah.model.MatrixInputDefectPart? = null,
     val daftarDefectSlotDraft: List<id.primaraya.qcontrol.ranah.model.DraftInputDefectSlot> = emptyList(),
@@ -72,6 +73,7 @@ data class KeadaanAplikasi(
     val masterDataLokalTersedia: Boolean = false,
     val sesiHeadQCTidakValid: Boolean = false,
     val pesanKesiapanInputHarian: String? = null,
+    val ringkasanHarianExpanded: Boolean = true,
 
     // Flash Message (Fase 2E-C)
     val pesanFlash: PesanFlash? = null

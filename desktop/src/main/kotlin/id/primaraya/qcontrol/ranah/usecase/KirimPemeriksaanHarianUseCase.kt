@@ -22,7 +22,13 @@ class KirimPemeriksaanHarianUseCase(
         if (hasilParts !is HasilOperasi.Berhasil) return HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal mengambil data part draft"))
         
         val parts = hasilParts.data
-        if (parts.isEmpty()) return HasilOperasi.Gagal(KesalahanAplikasi.Validasi("Belum ada part yang diinput untuk hari ini."))
+        
+        val hasilTanpaNg = repositoriLokal.ambilDraftProduksiTanpaNg(draft.id)
+        val produksiTanpaNg = if (hasilTanpaNg is HasilOperasi.Berhasil) hasilTanpaNg.data else emptyList()
+
+        if (parts.isEmpty() && produksiTanpaNg.isEmpty()) {
+            return HasilOperasi.Gagal(KesalahanAplikasi.Validasi("Belum ada data (Part atau Produksi Tanpa NG) yang diinput."))
+        }
 
         // 2. Bangun DTO Payload
         val daftarPartDto = parts.map { part ->
@@ -42,7 +48,17 @@ class KirimPemeriksaanHarianUseCase(
             )
         }.filter { it.totalCheck > 0 }
 
-        if (daftarPartDto.isEmpty()) return HasilOperasi.Gagal(KesalahanAplikasi.Validasi("Semua part memiliki Qty Check = 0. Tidak ada data untuk dikirim."))
+        val daftarProduksiTanpaNgDto = produksiTanpaNg.map { item ->
+            PermintaanSimpanProduksiTanpaNgDto(
+                partId = item.partId,
+                totalProduksi = item.totalProduksi,
+                catatan = item.catatan
+            )
+        }.filter { it.totalProduksi > 0 }
+
+        if (daftarPartDto.isEmpty() && daftarProduksiTanpaNgDto.isEmpty()) {
+            return HasilOperasi.Gagal(KesalahanAplikasi.Validasi("Tidak ada data valid (Check > 0 atau Produksi > 0) untuk dikirim."))
+        }
 
         val payloadDto = PermintaanSimpanPemeriksaanHarianDto(
             clientDraftId = draft.clientDraftId,
@@ -51,7 +67,8 @@ class KirimPemeriksaanHarianUseCase(
             nomorDokumen = draft.nomorDokumen,
             revisi = draft.revisi,
             catatan = draft.catatan,
-            daftarPart = daftarPartDto
+            daftarPart = daftarPartDto,
+            daftarProduksiTanpaNg = daftarProduksiTanpaNgDto
         )
         
         println("[DEBUG] Submit Harian: Tanggal=${draft.tanggalProduksi}, LineID=${draft.lineId}, Parts=${daftarPartDto.size}")

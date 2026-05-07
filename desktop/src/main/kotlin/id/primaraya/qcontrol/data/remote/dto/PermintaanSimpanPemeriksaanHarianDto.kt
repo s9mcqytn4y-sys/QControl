@@ -10,7 +10,15 @@ data class PermintaanSimpanPemeriksaanHarianDto(
     val nomorDokumen: String?,
     val revisi: String?,
     val catatan: String?,
-    val daftarPart: List<PermintaanSimpanPemeriksaanPartDto>
+    val daftarPart: List<PermintaanSimpanPemeriksaanPartDto>,
+    val daftarProduksiTanpaNg: List<PermintaanSimpanProduksiTanpaNgDto> = emptyList()
+)
+
+@Serializable
+data class PermintaanSimpanProduksiTanpaNgDto(
+    val partId: String,
+    val totalProduksi: Int,
+    val catatan: String? = null
 )
 
 @Serializable

@@ -164,6 +164,70 @@ class RepositoriInputHarianLokal(
         }
     }
 
+    fun ambilDraftProduksiTanpaNg(pemeriksaanHarianId: String): HasilOperasi<List<DraftProduksiTanpaNg>> {
+        return try {
+            koneksiDatabase.bukaKoneksi().use { koneksi ->
+                val sql = """
+                    SELECT d.*, m.nama_part, m.nomor_part
+                    FROM pemeriksaan_produksi_tanpa_ng_draft d
+                    JOIN master_part m ON d.part_id = m.id
+                    WHERE d.pemeriksaan_harian_draft_id = ?
+                    ORDER BY m.nama_part ASC
+                """.trimIndent()
+                
+                koneksi.prepareStatement(sql).use { ps ->
+                    ps.setString(1, pemeriksaanHarianId)
+                    val rs = ps.executeQuery()
+                    val daftar = mutableListOf<DraftProduksiTanpaNg>()
+                    while (rs.next()) {
+                        daftar.add(
+                            DraftProduksiTanpaNg(
+                                partId = rs.getString("part_id"),
+                                namaPart = rs.getString("nama_part"),
+                                nomorPart = rs.getString("nomor_part"),
+                                totalProduksi = rs.getInt("total_produksi"),
+                                catatan = rs.getString("catatan")
+                            )
+                        )
+                    }
+                    HasilOperasi.Berhasil(daftar)
+                }
+            }
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal ambil draft produksi tanpa NG: ${e.message}"))
+        }
+    }
+
+    suspend fun updateProduksiTanpaNg(pemeriksaanHarianId: String, partId: String, qty: Int): HasilOperasi<Unit> {
+        return try {
+            koneksiDatabase.bukaKoneksi().use { koneksi ->
+                val waktuSekarang = Instant.now().toString()
+                val sqlUpsert = """
+                    INSERT INTO pemeriksaan_produksi_tanpa_ng_draft (
+                        id, pemeriksaan_harian_draft_id, part_id, total_produksi, 
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(pemeriksaan_harian_draft_id, part_id) DO UPDATE SET
+                    total_produksi = excluded.total_produksi,
+                    updated_at = excluded.updated_at
+                """.trimIndent()
+                
+                koneksi.prepareStatement(sqlUpsert).use { ps ->
+                    ps.setString(1, UUID.randomUUID().toString())
+                    ps.setString(2, pemeriksaanHarianId)
+                    ps.setString(3, partId)
+                    ps.setInt(4, qty)
+                    ps.setString(5, waktuSekarang)
+                    ps.setString(6, waktuSekarang)
+                    ps.executeUpdate()
+                }
+                HasilOperasi.Berhasil(Unit)
+            }
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal update produksi tanpa NG: ${e.message}"))
+        }
+    }
+
     suspend fun updateQtyCheck(pemeriksaanHarianId: String, partId: String, qty: Int): HasilOperasi<Unit> {
         return try {
             koneksiDatabase.bukaKoneksi().use { koneksi ->

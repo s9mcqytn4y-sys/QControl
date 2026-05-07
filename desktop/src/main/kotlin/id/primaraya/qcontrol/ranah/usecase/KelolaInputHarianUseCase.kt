@@ -52,6 +52,14 @@ class KelolaInputHarianUseCase(
         return repositoriInputHarianLokal.updateQtyCheck(pemeriksaanHarianId, partId, qty)
     }
 
+    suspend fun updateProduksiTanpaNg(pemeriksaanHarianId: String, partId: String, qty: Int): HasilOperasi<Unit> {
+        return repositoriInputHarianLokal.updateProduksiTanpaNg(pemeriksaanHarianId, partId, qty)
+    }
+
+    fun bacaDaftarProduksiTanpaNg(pemeriksaanHarianId: String): HasilOperasi<List<DraftProduksiTanpaNg>> {
+        return repositoriInputHarianLokal.ambilDraftProduksiTanpaNg(pemeriksaanHarianId)
+    }
+
     fun bacaDaftarDefectSlot(inputPartId: String): HasilOperasi<List<DraftInputDefectSlot>> {
         return repositoriInputHarianLokal.ambilDraftInputDefectSlot(inputPartId)
     }

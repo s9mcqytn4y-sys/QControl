@@ -29,6 +29,7 @@ import id.primaraya.qcontrol.tema.*
 fun PanelPremiumQControl(
     modifier: Modifier = Modifier,
     judul: String? = null,
+    aksiHeader: @Composable (RowScope.() -> Unit)? = null,
     konten: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
@@ -39,14 +40,28 @@ fun PanelPremiumQControl(
         tonalElevation = 2.dp
     ) {
         Column(modifier = Modifier.padding(UkuranQControl.SpasiNormal)) {
-            if (judul != null) {
-                Text(
-                    text = judul.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TeksKontrasRendah,
-                    modifier = Modifier.padding(bottom = UkuranQControl.SpasiNormal)
-                )
+            if (judul != null || aksiHeader != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = UkuranQControl.SpasiNormal),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (judul != null) {
+                        Text(
+                            text = judul.uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TeksKontrasRendah
+                        )
+                    }
+                    if (aksiHeader != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            aksiHeader()
+                        }
+                    }
+                }
             }
             konten()
         }

@@ -200,6 +200,12 @@ class PengelolaKeadaanAplikasi(
             is AksiAplikasi.UpdateDefectSlot -> {
                 updateDefectSlot(aksi.partId, aksi.slotId, aksi.defectId, aksi.qty)
             }
+            is AksiAplikasi.UpdateProduksiTanpaNg -> {
+                updateProduksiTanpaNg(aksi.partId, aksi.qty)
+            }
+            is AksiAplikasi.ToggleRingkasanExpanded -> {
+                _keadaan.update { it.copy(ringkasanHarianExpanded = !it.ringkasanHarianExpanded) }
+            }
             is AksiAplikasi.ResetDraftInputHarian -> {
                 resetDraftInputHarian()
             }
@@ -727,6 +733,7 @@ class PengelolaKeadaanAplikasi(
                         ) 
                     }
                     muatDaftarInputPart()
+                    muatDaftarProduksiTanpaNg()
                     muatRingkasanInputHarian()
                 }
                 is HasilOperasi.Gagal -> {
@@ -749,6 +756,20 @@ class PengelolaKeadaanAplikasi(
                     @Suppress("UNCHECKED_CAST")
                     val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.DraftInputPart>
                     _keadaan.update { it.copy(daftarInputPartDraft = daftar) }
+                }
+                is HasilOperasi.Gagal -> {}
+            }
+        }
+    }
+
+    private fun muatDaftarProduksiTanpaNg() {
+        val draft = _keadaan.value.draftPemeriksaanHarian ?: return
+        lingkup.launch {
+            when (val hasil = kelolaInputHarianUseCase.bacaDaftarProduksiTanpaNg(draft.id)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.DraftProduksiTanpaNg>
+                    _keadaan.update { it.copy(daftarProduksiTanpaNg = daftar) }
                 }
                 is HasilOperasi.Gagal -> {}
             }
@@ -799,15 +820,38 @@ class PengelolaKeadaanAplikasi(
         val harianId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
         lingkup.launch {
             kelolaInputHarianUseCase.updateQtyCheck(harianId, partId, qty)
+            
+            // 1. Refresh Part List
             muatDaftarInputPart()
+            
+            // 2. Refresh Summary
             muatRingkasanInputHarian()
             
-            // Update selection state and matrix
-            val partTerupdate = _keadaan.value.daftarInputPartDraft.find { it.partId == partId }
+            // 3. Update selection state and matrix if this part is selected
             if (_keadaan.value.inputPartTerpilih?.partId == partId) {
-                _keadaan.update { it.copy(inputPartTerpilih = partTerupdate) }
-                if (partTerupdate != null) muatMatrixInputDefect(partTerupdate)
+                // We need to wait for muatDaftarInputPart to update _keadaan or find it manually from DB
+                // For simplicity and immediate UI feedback, we find it from the updated list in state
+                // However, muatDaftarInputPart is async. Better to fetch specifically.
+                when (val hasil = kelolaInputHarianUseCase.bacaDaftarPart(harianId, _keadaan.value.lineAktif, _keadaan.value.kataKunciPartInputHarian)) {
+                    is HasilOperasi.Berhasil<*> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.DraftInputPart>
+                        val partTerupdate = daftar.find { it.partId == partId }
+                        _keadaan.update { it.copy(inputPartTerpilih = partTerupdate) }
+                        if (partTerupdate != null) muatMatrixInputDefect(partTerupdate)
+                    }
+                    is HasilOperasi.Gagal -> {}
+                }
             }
+        }
+    }
+
+    private fun updateProduksiTanpaNg(partId: String, qty: Int) {
+        if (qty < 0) return
+        val harianId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        lingkup.launch {
+            kelolaInputHarianUseCase.updateProduksiTanpaNg(harianId, partId, qty)
+            muatDaftarProduksiTanpaNg()
         }
     }
 
@@ -835,14 +879,25 @@ class PengelolaKeadaanAplikasi(
 
         lingkup.launch {
             kelolaInputHarianUseCase.updateDefectSlot(harianId, partId, relasiId, slotId, qty)
+            
+            // 1. Refresh Part List (for badge/qty updates)
             muatDaftarInputPart()
+            
+            // 2. Refresh Summary
             muatRingkasanInputHarian()
             
-            // Update selection state and matrix
-            val partTerupdate = _keadaan.value.daftarInputPartDraft.find { it.partId == partId }
-            if (_keadaan.value.inputPartTerpilih?.partId == partId) {
-                _keadaan.update { it.copy(inputPartTerpilih = partTerupdate) }
-                if (partTerupdate != null) muatMatrixInputDefect(partTerupdate)
+            // 3. Update selection state and matrix
+            when (val hasil = kelolaInputHarianUseCase.bacaDaftarPart(harianId, _keadaan.value.lineAktif, _keadaan.value.kataKunciPartInputHarian)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val daftar = hasil.data as List<id.primaraya.qcontrol.ranah.model.DraftInputPart>
+                    val partTerupdate = daftar.find { it.partId == partId }
+                    if (_keadaan.value.inputPartTerpilih?.partId == partId) {
+                        _keadaan.update { it.copy(inputPartTerpilih = partTerupdate) }
+                        if (partTerupdate != null) muatMatrixInputDefect(partTerupdate)
+                    }
+                }
+                is HasilOperasi.Gagal -> {}
             }
         }
     }

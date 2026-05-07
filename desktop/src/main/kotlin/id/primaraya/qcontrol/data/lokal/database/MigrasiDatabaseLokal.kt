@@ -46,6 +46,11 @@ class MigrasiDatabaseLokal(
                 migrasiVersi7(koneksi)
                 catatMigrasi(koneksi, 7, "penyempurnaan_skema_draft_dan_outbox")
             }
+
+            if (versiSaatIni < 8) {
+                migrasiVersi8(koneksi)
+                catatMigrasi(koneksi, 8, "tambah_tabel_produksi_tanpa_ng_draft")
+            }
         }
     }
 
@@ -448,6 +453,35 @@ class MigrasiDatabaseLokal(
                 // Idempotent column addition for outbox
                 try { statement.execute(sqlUpdateOutbox1) } catch (e: Exception) {}
                 try { statement.execute(sqlUpdateOutbox2) } catch (e: Exception) {}
+            }
+            koneksi.commit()
+        } catch (e: Exception) {
+            koneksi.rollback()
+            throw e
+        } finally {
+            koneksi.autoCommit = true
+        }
+    }
+
+    private fun migrasiVersi8(koneksi: Connection) {
+        val sqlProduksiTanpaNg = """
+            CREATE TABLE IF NOT EXISTS pemeriksaan_produksi_tanpa_ng_draft (
+                id TEXT PRIMARY KEY,
+                pemeriksaan_harian_draft_id TEXT NOT NULL,
+                part_id TEXT NOT NULL,
+                total_produksi INTEGER NOT NULL DEFAULT 0,
+                catatan TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (pemeriksaan_harian_draft_id) REFERENCES pemeriksaan_harian_draft(id),
+                UNIQUE(pemeriksaan_harian_draft_id, part_id)
+            )
+        """.trimIndent()
+
+        koneksi.autoCommit = false
+        try {
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlProduksiTanpaNg)
             }
             koneksi.commit()
         } catch (e: Exception) {

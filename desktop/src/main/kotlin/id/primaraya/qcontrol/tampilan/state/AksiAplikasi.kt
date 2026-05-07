@@ -37,6 +37,8 @@ sealed class AksiAplikasi {
     data class PilihInputPart(val part: id.primaraya.qcontrol.ranah.model.DraftInputPart?) : AksiAplikasi()
     data class UpdateQtyCheckInputPart(val partId: String, val qty: Int) : AksiAplikasi()
     data class UpdateDefectSlot(val partId: String, val slotId: String, val defectId: String, val qty: Int) : AksiAplikasi()
+    data class UpdateProduksiTanpaNg(val partId: String, val qty: Int) : AksiAplikasi()
+    object ToggleRingkasanExpanded : AksiAplikasi()
     object ResetDraftInputHarian : AksiAplikasi()
     object KirimKeServer : AksiAplikasi()
     object MuatUlangDataLokal : AksiAplikasi()
