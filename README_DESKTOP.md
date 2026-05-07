@@ -1,17 +1,18 @@
-# QControl Desktop - Fase 2G-A: Pematangan Input Harian QC
+# QControl Desktop - Fase 2G-Bugfix-R1: Perbaikan Line & Part List
 
 Aplikasi desktop Windows untuk Quality Control (QC) manufaktur, dioptimalkan untuk peran HeadQC dengan dukungan offline-first dan tampilan premium.
 
 ## Status Fase Saat Ini
-- **Fase 2G-A**: Pematangan Input Harian (Digital Checksheet), Switch Line dinamis, validasi ketat, dan visual polish.
+- **Fase 2G-Bugfix-R1**: Perbaikan kritis identitas Line (UUID), optimalisasi query Daftar Part, dan pembersihan layout panel aksi.
 
 ## Fitur Utama
 - **Digital Checksheet**: Workflow input harian yang matang dengan pemilihan Line dan Part otomatis.
-- **Switch Line Dinamis**: Mendukung perpindahan line produksi dengan pemuatan draft dan daftar part yang sesuai secara instan.
+- **Switch Line Stabil**: Menggunakan UUID untuk konsistensi antara cache lokal dan PGNServer.
+- **Diagnostik Master Data**: Pesan bantuan cerdas jika daftar part kosong untuk mempermudah troubleshooting mapping data.
 - **Premium Dark Theme**: Antarmuka berbasis Material 3 dengan estetika manufacturing control system yang elegan.
 - **Offline-First**: Bekerja penuh tanpa internet menggunakan cache SQLite lokal.
 - **Client Validation**: Validasi input ketat (Total Defect vs Total Check) untuk memastikan integritas data.
-- **Rules & Prosedur**: Panduan langkah demi langkah penggunaan Digital Checksheet langsung di UI.
+- **Action Panel Ergonomis**: Layout tombol yang bersih dan tidak terpotong, dioptimalkan untuk efisiensi operator.
 
 ## Alur Kerja Operasional (HeadQC)
 1. **Login**: Gunakan kredensial HeadQC (`headqc@pgn.local`).

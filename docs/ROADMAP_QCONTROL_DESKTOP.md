@@ -24,6 +24,7 @@ Dokumen ini merangkum rencana pengembangan QControl sebagai aplikasi Desktop (Wi
 - [x] Fase 2E-C: Premium UI/UX Hardening (Branding, Client Validation, Flash Message).
 - [x] Fase 2F-B: Stabilisasi Input Harian & Sinkronisasi (Daily Input, Sync Contract, Offline Persistence).
 - [x] Fase 2G-A: Pematangan Input Harian QC (Switch Line, Default Part, Validasi Client).
+- [x] Fase 2G-Bugfix-R1: Perbaikan Line, Part List, dan Action Panel.
 - [ ] Fase 3: Fitur Bisnis Utama
 - [ ] Implementasi Dashboard Utama (Rasio NG, Total Inspeksi).
 - [ ] Modul Inspeksi Harian (Skeleton Input).

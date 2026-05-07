@@ -11,6 +11,7 @@ import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 @Composable
 fun KerangkaAplikasi(
     keadaan: KeadaanAplikasi,
+    diagnostik: Map<String, Int> = emptyMap(),
     onAksi: (AksiAplikasi) -> Unit
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -30,6 +31,7 @@ fun KerangkaAplikasi(
         ) { padding ->
             KontenAplikasi(
                 keadaan = keadaan,
+                diagnostik = diagnostik,
                 padding = padding,
                 onAksi = onAksi
             )

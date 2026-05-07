@@ -53,6 +53,8 @@ class KirimPemeriksaanHarianUseCase(
             catatan = draft.catatan,
             daftarPart = daftarPartDto
         )
+        
+        println("[DEBUG] Submit Harian: Tanggal=${draft.tanggalProduksi}, LineID=${draft.lineId}, Parts=${daftarPartDto.size}")
 
         val payloadJson = Json.encodeToString(payloadDto)
         val hashPayload = hitungHash(payloadJson)

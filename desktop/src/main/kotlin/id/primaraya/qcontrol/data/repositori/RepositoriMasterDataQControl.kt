@@ -44,4 +44,6 @@ class RepositoriMasterDataQControl(
 
     fun bacaTemplateDefectPart(partId: String): HasilOperasi<List<TemplateDefectPart>> =
         repositoriLokal.bacaTemplateDefectPart(partId)
+
+    fun bacaDiagnostikMasterData(): Map<String, Int> = repositoriLokal.bacaDiagnostikMasterData()
 }

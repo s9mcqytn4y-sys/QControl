@@ -103,6 +103,7 @@ fun AplikasiQControl() {
     val repositoriInputHarianLokal = remember { RepositoriInputHarianLokal(koneksiDatabaseLokal) }
     val kelolaInputHarianUseCase = remember { KelolaInputHarianUseCase(repositoriInputHarianLokal, repositoriMasterDataLokal) }
     val kirimPemeriksaanHarianUseCase = remember { KirimPemeriksaanHarianUseCase(repositoriInputHarianLokal, repositoriOutboxSinkronisasi) }
+    val bacaDiagnostikMasterDataUseCase = remember { BacaDiagnostikMasterDataUseCase(repositoriMasterData) }
 
 
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
@@ -130,10 +131,12 @@ fun AplikasiQControl() {
             bacaRelasiPartDefectMasterUseCase,
             bacaTemplateDefectPartUseCase,
             kelolaInputHarianUseCase,
-            kirimPemeriksaanHarianUseCase
+            kirimPemeriksaanHarianUseCase,
+            bacaDiagnostikMasterDataUseCase
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()
+    val diagnostik by pengelolaState.diagnostikMasterData.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Efek untuk menampilkan Pesan Flash via Snackbar
@@ -179,6 +182,7 @@ fun AplikasiQControl() {
                 } else {
                     KerangkaAplikasi(
                         keadaan = keadaan,
+                        diagnostik = diagnostik,
                         onAksi = { aksi ->
                             pengelolaState.tangani(aksi)
                         }

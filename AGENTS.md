@@ -36,7 +36,7 @@ Aplikasi menggunakan struktur folder berikut:
 - **Master Data**: Bersifat **Read-only** (hanya tarik dari PGNServer). Dilarang melakukan CRUD Master Data di aplikasi ini.
 - **Transaksi**: Input Harian dilarang dilakukan sebelum template defect per part tervalidasi.
 - **Sinkronisasi**: Gunakan Outbox dengan X-Idempotency-Key. Client Draft ID wajib unik per input.
-- **Fase Saat Ini**: **2G-A** (Pematangan Input Harian QC).
+- **Fase Saat Ini**: **2G-Bugfix-R1** (Perbaikan Line, Part List, dan Action Panel).
 
 ## 6. Command Verifikasi
 ```bash

@@ -54,10 +54,15 @@ class PengelolaKeadaanAplikasi(
     private val bacaTemplateDefectPartUseCase: BacaTemplateDefectPartUseCase,
     private val kelolaInputHarianUseCase: KelolaInputHarianUseCase,
     private val kirimPemeriksaanHarianUseCase: KirimPemeriksaanHarianUseCase,
+    private val bacaDiagnostikMasterDataUseCase: BacaDiagnostikMasterDataUseCase,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
     val keadaan: StateFlow<KeadaanAplikasi> = _keadaan.asStateFlow()
+
+    // Diagnostik (Fase 2G-Bugfix)
+    private val _diagnostikMasterData = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val diagnostikMasterData: StateFlow<Map<String, Int>> = _diagnostikMasterData.asStateFlow()
 
     init {
         // Amati status dari pengelola sinkronisasi
@@ -88,6 +93,11 @@ class PengelolaKeadaanAplikasi(
         muatRingkasanOutbox()
         periksaSesiAktif()
         muatMasterDataLokal()
+        muatDiagnostik()
+    }
+
+    private fun muatDiagnostik() {
+        _diagnostikMasterData.value = bacaDiagnostikMasterDataUseCase.eksekusi()
     }
 
     fun tangani(aksi: AksiAplikasi) {
@@ -97,12 +107,16 @@ class PengelolaKeadaanAplikasi(
             }
             is AksiAplikasi.GantiLineAktif -> {
                 _keadaan.update { it.copy(
-                    lineAktif = aksi.line,
+                    lineAktifId = aksi.line.id,
+                    kodeLineAktif = aksi.line.kodeLine,
+                    namaLineAktif = aksi.line.namaLine,
+                    lineAktif = aksi.line.namaLine, // Sync deprecated
                     inputPartTerpilih = null,
-                    matrixInputDefectPart = null
+                    matrixInputDefectPart = null,
+                    kataKunciPartInputHarian = "" // Reset search
                 ) }
-                muatDraftInputHarian(_keadaan.value.tanggalPemeriksaanHarian, aksi.line)
-                tangani(AksiAplikasi.TampilkanPesanFlash("Line Produksi diubah ke ${aksi.line}", TipePesanFlash.INFO))
+                muatDraftInputHarian(_keadaan.value.tanggalPemeriksaanHarian, aksi.line.id)
+                tangani(AksiAplikasi.TampilkanPesanFlash("Line Produksi diubah ke ${aksi.line.namaLine}", TipePesanFlash.INFO))
             }
             is AksiAplikasi.PeriksaKoneksiServer -> {
                 periksaKoneksi()
@@ -500,6 +514,25 @@ class PengelolaKeadaanAplikasi(
                         )
                     }
                     tangani(AksiAplikasi.TampilkanPesanFlash("Master data berhasil ditarik dari server", TipePesanFlash.SUKSES))
+                    
+                    // REFRESH SETELAH TARIK MASTER DATA (TASK 4)
+                    muatMasterDataLokal()
+                    muatDiagnostik()
+                    
+                    // Validasi line aktif
+                    val lineValid = _keadaan.value.daftarLineProduksiMaster.find { it.id == _keadaan.value.lineAktifId }
+                        ?: _keadaan.value.daftarLineProduksiMaster.firstOrNull()
+                    
+                    lineValid?.let { line ->
+                        _keadaan.update { it.copy(
+                            lineAktifId = line.id,
+                            kodeLineAktif = line.kodeLine,
+                            namaLineAktif = line.namaLine,
+                            lineAktif = line.namaLine
+                        ) }
+                        muatDraftInputHarian(_keadaan.value.tanggalPemeriksaanHarian, line.id)
+                    }
+
                     muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
                 }
                 is HasilOperasi.Gagal -> {
@@ -530,12 +563,52 @@ class PengelolaKeadaanAplikasi(
                 is HasilOperasi.Berhasil<*> -> {
                     val ringkasan = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanMasterData
                     _keadaan.update { it.copy(ringkasanMasterData = ringkasan, pesanMasterData = null, masterDataLokalTersedia = true) }
+                    
+                    // Muat data pendukung (TASK 5)
+                    muatDaftarLineProduksi()
+                    muatDaftarSlotWaktu()
+                    
+                    // Validasi dan muat draft awal jika sudah ada line
+                    val lineId = _keadaan.value.lineAktifId
+                    if (!lineId.isNullOrEmpty()) {
+                        muatDraftInputHarian(_keadaan.value.tanggalPemeriksaanHarian, lineId)
+                    } else {
+                        // Jika belum ada line aktif (start awal), coba ambil dari master
+                        _keadaan.value.daftarLineProduksiMaster.firstOrNull()?.let { firstLine ->
+                            _keadaan.update { it.copy(
+                                lineAktifId = firstLine.id,
+                                kodeLineAktif = firstLine.kodeLine,
+                                namaLineAktif = firstLine.namaLine,
+                                lineAktif = firstLine.namaLine
+                            ) }
+                            muatDraftInputHarian(_keadaan.value.tanggalPemeriksaanHarian, firstLine.id)
+                        }
+                    }
+
                     muatDaftarTabMasterData(_keadaan.value.tabMasterDataAktif)
                 }
                 is HasilOperasi.Gagal -> {
                     _keadaan.update { it.copy(ringkasanMasterData = null, masterDataLokalTersedia = false) }
                 }
             }
+        }
+    }
+
+    private suspend fun muatDaftarLineProduksi() {
+        when (val hasil = bacaDaftarLineProduksiMasterUseCase.eksekusi()) {
+            is HasilOperasi.Berhasil<*> -> {
+                _keadaan.update { it.copy(daftarLineProduksiMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.LineProduksi>) }
+            }
+            is HasilOperasi.Gagal -> {}
+        }
+    }
+
+    private suspend fun muatDaftarSlotWaktu() {
+        when (val hasil = bacaDaftarSlotWaktuMasterUseCase.eksekusi()) {
+            is HasilOperasi.Berhasil<*> -> {
+                _keadaan.update { it.copy(daftarSlotWaktuMaster = hasil.data as List<id.primaraya.qcontrol.ranah.model.SlotWaktu>) }
+            }
+            is HasilOperasi.Gagal -> {}
         }
     }
 

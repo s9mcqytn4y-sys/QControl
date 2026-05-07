@@ -13,13 +13,14 @@ import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 @Composable
 fun KontenAplikasi(
     keadaan: KeadaanAplikasi,
+    diagnostik: Map<String, Int> = emptyMap(),
     padding: PaddingValues,
     onAksi: (AksiAplikasi) -> Unit
 ) {
     Box(modifier = Modifier.padding(padding)) {
         when (keadaan.ruteAktif) {
             RuteAplikasi.Dashboard -> HalamanDashboard()
-            RuteAplikasi.InputHarian -> HalamanInputHarian(keadaan = keadaan, onAksi = onAksi)
+            RuteAplikasi.InputHarian -> HalamanInputHarian(keadaan = keadaan, diagnostik = diagnostik, onAksi = onAksi)
             RuteAplikasi.RecordingDataDefect -> HalamanRecordingDataDefect(keadaan = keadaan, onAksi = onAksi)
             RuteAplikasi.ControlChart -> HalamanControlChart(keadaan = keadaan, onAksi = onAksi)
             RuteAplikasi.LaporanBulanan -> HalamanLaporanBulanan(keadaan = keadaan, onAksi = onAksi)

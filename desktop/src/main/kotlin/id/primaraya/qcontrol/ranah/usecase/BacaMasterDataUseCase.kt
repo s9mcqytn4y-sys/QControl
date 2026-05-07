@@ -31,3 +31,7 @@ class BacaDaftarLineProduksiMasterUseCase(private val repositori: RepositoriMast
 class BacaRelasiPartDefectMasterUseCase(private val repositori: RepositoriMasterDataQControl) {
     fun eksekusi(partId: String): HasilOperasi<List<RelasiPartDefect>> = repositori.bacaRelasiPartDefect(partId)
 }
+
+class BacaDiagnostikMasterDataUseCase(private val repositori: RepositoriMasterDataQControl) {
+    fun eksekusi(): Map<String, Int> = repositori.bacaDiagnostikMasterData()
+}

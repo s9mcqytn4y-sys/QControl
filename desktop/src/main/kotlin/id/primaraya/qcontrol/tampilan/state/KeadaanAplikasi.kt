@@ -25,7 +25,10 @@ data class KeadaanAplikasi(
     val pesanRingkasanOutbox: String? = null,
     val namaPengguna: String = "Wahyu",
     val peranPengguna: String = KonfigurasiPeran.HEAD_QC,
-    val lineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT,
+    val lineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT, // Deprecated: use namaLineAktif
+    val lineAktifId: String? = null,
+    val kodeLineAktif: String = "",
+    val namaLineAktif: String = KonfigurasiAplikasi.LINE_DEFAULT,
     val sinkronisasiOtomatisAktif: Boolean = false,
     val sedangSinkronisasi: Boolean = false,
     val pesanSinkronisasiTerakhir: String? = null,

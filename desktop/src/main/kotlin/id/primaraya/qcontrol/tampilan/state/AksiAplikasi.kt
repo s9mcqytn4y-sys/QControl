@@ -4,7 +4,7 @@ import id.primaraya.qcontrol.tampilan.navigasi.RuteAplikasi
 
 sealed class AksiAplikasi {
     data class PilihRute(val rute: RuteAplikasi) : AksiAplikasi()
-    data class GantiLineAktif(val line: String) : AksiAplikasi()
+    data class GantiLineAktif(val line: id.primaraya.qcontrol.ranah.model.LineProduksi) : AksiAplikasi()
     object PeriksaKoneksiServer : AksiAplikasi()
     object PeriksaDatabaseLokal : AksiAplikasi()
     object MuatKonfigurasiLokal : AksiAplikasi()

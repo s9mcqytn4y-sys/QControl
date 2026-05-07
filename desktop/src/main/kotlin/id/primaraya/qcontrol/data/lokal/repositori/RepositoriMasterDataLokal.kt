@@ -225,7 +225,7 @@ class RepositoriMasterDataLokal(
         }
     }
 
-    fun bacaDaftarPart(kataKunci: String = "", lineId: String? = null): HasilOperasi<List<Part>> {
+    fun bacaDaftarPart(kataKunci: String = "", lineIdAtauKode: String? = null): HasilOperasi<List<Part>> {
         return try {
             koneksiDatabase.bukaKoneksi().use { koneksi ->
                 var sql = "SELECT * FROM master_part WHERE 1=1"
@@ -237,13 +237,20 @@ class RepositoriMasterDataLokal(
                     repeat(5) { parameter.add(pola) }
                 }
                 
-                if (!lineId.isNullOrBlank()) {
-                    sql += " AND (line_default_id = ? OR kode_line_default = (SELECT kode_line FROM master_line_produksi WHERE id = ?))"
-                    parameter.add(lineId)
-                    parameter.add(lineId)
+                if (!lineIdAtauKode.isNullOrBlank()) {
+                    sql += """
+                        AND (
+                            line_default_id = ? 
+                            OR kode_line_default = ? 
+                            OR nama_line_default = ?
+                            OR line_default_id IN (SELECT id FROM master_line_produksi WHERE id = ? OR kode_line = ? OR nama_line = ?)
+                        )
+                    """.trimIndent()
+                    repeat(6) { parameter.add(lineIdAtauKode) }
                 }
                 
-                sql += " ORDER BY nama_part"
+                sql += " AND aktif = 1"
+                sql += " ORDER BY kode_line_default, nama_part, kode_unik_part"
                 
                 val daftar = mutableListOf<Part>()
                 koneksi.prepareStatement(sql).use { ps ->
@@ -274,6 +281,11 @@ class RepositoriMasterDataLokal(
                         )
                     }
                 }
+                
+                if (daftar.isEmpty() && !lineIdAtauKode.isNullOrBlank()) {
+                    println("[DEBUG] Query Part Kosong untuk line: $lineIdAtauKode")
+                }
+
                 HasilOperasi.Berhasil(daftar)
             }
         } catch (e: Exception) {
@@ -480,6 +492,41 @@ class RepositoriMasterDataLokal(
             }
         } catch (e: Exception) {
             HasilOperasi.Gagal(KesalahanAplikasi.TidakDiketahui("Gagal membaca template defect part: ${e.message}"))
+        }
+    }
+
+    fun bacaDiagnostikMasterData(): Map<String, Int> {
+        return try {
+            koneksiDatabase.bukaKoneksi().use { koneksi ->
+                val stats = mutableMapOf<String, Int>()
+                
+                fun count(table: String, condition: String = "1=1"): Int {
+                    koneksi.prepareStatement("SELECT COUNT(*) FROM $table WHERE $condition").use { ps ->
+                        val rs = ps.executeQuery()
+                        return if (rs.next()) rs.getInt(1) else 0
+                    }
+                }
+                
+                stats["total_part"] = count("master_part")
+                stats["total_line"] = count("master_line_produksi")
+                stats["total_slot_waktu"] = count("master_slot_waktu")
+                stats["total_relasi_part_defect"] = count("master_relasi_part_defect")
+                
+                // Cari ID line PRESS/SEWING jika ada
+                val lines = mutableListOf<Pair<String, String>>()
+                koneksi.prepareStatement("SELECT id, nama_line FROM master_line_produksi").use { ps ->
+                    val rs = ps.executeQuery()
+                    while (rs.next()) lines.add(rs.getString(1) to rs.getString(2))
+                }
+                
+                lines.forEach { (id, nama) ->
+                    stats["part_line_$nama"] = count("master_part", "line_default_id = '$id' OR kode_line_default = '$nama' OR nama_line_default = '$nama'")
+                }
+                
+                stats
+            }
+        } catch (e: Exception) {
+            emptyMap()
         }
     }
 }

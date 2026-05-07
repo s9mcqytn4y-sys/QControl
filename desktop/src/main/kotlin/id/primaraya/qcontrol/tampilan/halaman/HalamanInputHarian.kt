@@ -25,17 +25,20 @@ import id.primaraya.qcontrol.tampilan.komponen.*
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
 import id.primaraya.qcontrol.tampilan.state.StatusKoneksiServer
+import id.primaraya.qcontrol.tampilan.state.TipePesanFlash
 import id.primaraya.qcontrol.tema.*
 
 @Composable
 fun HalamanInputHarian(
     keadaan: KeadaanAplikasi,
+    diagnostik: Map<String, Int> = emptyMap(),
     onAksi: (AksiAplikasi) -> Unit
 ) {
     // Inisialisasi
     LaunchedEffect(Unit) {
         if (keadaan.draftPemeriksaanHarian == null) {
-            onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, keadaan.lineAktif))
+            val targetLineId = keadaan.lineAktifId ?: keadaan.lineAktif // Fallback to name if ID is null
+            onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, targetLineId))
         }
     }
 
@@ -64,6 +67,7 @@ fun HalamanInputHarian(
             PanelPilihPart(
                 modifier = Modifier.weight(0.25f),
                 keadaan = keadaan,
+                diagnostik = diagnostik,
                 onAksi = onAksi
             )
 
@@ -125,7 +129,7 @@ private fun HeaderInputHarian(
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                             Icon(Icons.Default.PrecisionManufacturing, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("Line: ${keadaan.lineAktif}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = TeksKontrasTinggi)
+                            Text("Line: ${keadaan.namaLineAktif}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = TeksKontrasTinggi)
                             Icon(Icons.Default.ArrowDropDown, null, tint = TeksKontrasRendah)
                         }
                     }
@@ -145,16 +149,16 @@ private fun HeaderInputHarian(
                                 DropdownMenuItem(
                                     text = { 
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            if (keadaan.lineAktif == line.namaLine) {
+                                            if (keadaan.namaLineAktif == line.namaLine) {
                                                 Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = SolarYellow)
                                                 Spacer(Modifier.width(8.dp))
                                             }
-                                            Text(line.namaLine, color = if (keadaan.lineAktif == line.namaLine) SolarYellow else TeksKontrasTinggi)
+                                            Text(line.namaLine, color = if (keadaan.namaLineAktif == line.namaLine) SolarYellow else TeksKontrasTinggi)
                                         }
                                     },
                                     onClick = {
                                         ekspansiLine = false
-                                        onAksi(AksiAplikasi.GantiLineAktif(line.namaLine))
+                                        onAksi(AksiAplikasi.GantiLineAktif(line))
                                     }
                                 )
                             }
@@ -173,8 +177,11 @@ private fun HeaderInputHarian(
                 Spacer(Modifier.width(8.dp))
                 TombolKecilHeader(
                     ikon = Icons.Default.Refresh,
-                    label = "Reload Draft",
-                    onClick = { onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, keadaan.lineAktif)) }
+                    label = "Muat Ulang Draft",
+                    onClick = { 
+                        val targetLineId = keadaan.lineAktifId ?: keadaan.lineAktif
+                        onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, targetLineId)) 
+                    }
                 )
             }
         }
@@ -192,7 +199,7 @@ private fun HeaderInputHarian(
             
             val isOnline = keadaan.statusKoneksi == StatusKoneksiServer.Tersambung
             ChipStatusQControl(
-                label = if (isOnline) "SERVER ONLINE" else "MODE LOKAL",
+                label = if (isOnline) "PGNServer Tersambung" else "Mode Offline",
                 warna = if (isOnline) BerhasilHijau else PeringatanKuning
             )
         }
@@ -226,6 +233,7 @@ private fun TombolKecilHeader(
 private fun PanelPilihPart(
     modifier: Modifier,
     keadaan: KeadaanAplikasi,
+    diagnostik: Map<String, Int>,
     onAksi: (AksiAplikasi) -> Unit
 ) {
     PanelPremiumQControl(modifier = modifier, judul = "Daftar Part") {
@@ -244,11 +252,36 @@ private fun PanelPilihPart(
 
         if (keadaan.daftarInputPartDraft.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Inventory2, null, modifier = Modifier.size(48.dp), tint = TeksKontrasRendah.copy(alpha = 0.5f))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                    val isSearch = keadaan.kataKunciPartInputHarian.isNotBlank()
+                    val ikon = if (isSearch) Icons.Default.SearchOff else Icons.Default.Inventory2
+                    val judul = if (isSearch) "Pencarian Kosong" else "Part Tidak Ditemukan"
+                    val pesan = if (isSearch) "Tidak ada part dengan kata kunci '${keadaan.kataKunciPartInputHarian}'" else "Part untuk line ${keadaan.namaLineAktif} tidak ditemukan."
+                    
+                    Icon(ikon, null, modifier = Modifier.size(48.dp), tint = TeksKontrasRendah.copy(alpha = 0.5f))
                     Spacer(Modifier.height(16.dp))
-                    Text("Part tidak ditemukan.", style = MaterialTheme.typography.labelSmall, color = TeksKontrasRendah)
-                    Text("Tarik Master Data dari PGNServer.", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = TeksKontrasRendah.copy(alpha = 0.7f))
+                    Text(judul, style = MaterialTheme.typography.labelLarge, color = TeksKontrasTinggi, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(pesan, style = MaterialTheme.typography.labelSmall, color = TeksKontrasRendah, textAlign = TextAlign.Center)
+                    
+                    if (!isSearch) {
+                        Spacer(Modifier.height(16.dp))
+                        // Diagnostik (TASK 3)
+                        Surface(
+                            color = LatarBelakangUtama.copy(alpha = 0.3f),
+                            shape = MaterialTheme.shapes.extraSmall,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GarisSubtle)
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text("Diagnostik Master:", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = SolarYellow, fontWeight = FontWeight.Bold)
+                                Text("Total Part Master: ${diagnostik["total_part"] ?: 0}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = TeksKontrasRendah)
+                                Text("Part Line ${keadaan.namaLineAktif}: ${diagnostik["part_line_${keadaan.namaLineAktif}"] ?: 0}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = TeksKontrasRendah)
+                                Text("Total Line: ${diagnostik["total_line"] ?: 0}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = TeksKontrasRendah)
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text("Tarik ulang Master Data atau periksa mapping line.", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = TeksKontrasRendah.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                    }
                 }
             }
         } else {
@@ -462,17 +495,27 @@ private fun PanelRingkasanQC(
             
             Spacer(Modifier.weight(1f))
 
-            // Action Buttons
+            // Action Buttons (TASK 7)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val canSubmit = totalCheck > 0 && !keadaan.sedangSinkronisasi && !isTerkirim && totalDefect <= totalCheck
 
                 TombolUtamaQControl(
-                    text = "Kirim ke PGNServer",
+                    text = "Kirim Data ke PGNServer",
                     onClick = { onAksi(AksiAplikasi.KirimKeServer) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = canSubmit,
                     ikon = Icons.Default.CloudUpload,
                     sedangMemuat = keadaan.sedangSinkronisasi
+                )
+
+                TombolSekunderQControl(
+                    text = "Simpan Draft Lokal",
+                    onClick = { 
+                        onAksi(AksiAplikasi.TampilkanPesanFlash("Draft lokal tersimpan otomatis", TipePesanFlash.INFO))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isTerkirim,
+                    ikon = Icons.Default.Save
                 )
                 
                 if (!canSubmit && totalCheck > 0 && !isTerkirim) {
@@ -482,21 +525,13 @@ private fun PanelRingkasanQC(
                     }
                 }
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TombolSekunderQControl(
-                        text = "Reset Draft",
-                        onClick = { onAksi(AksiAplikasi.ResetDraftInputHarian) },
-                        modifier = Modifier.weight(1f),
-                        enabled = totalCheck > 0 && !isTerkirim,
-                        ikon = Icons.Default.DeleteSweep
-                    )
-                    
-                    TombolSekunderQControl(
-                        text = "Prosedur",
-                        onClick = { tampilkanBantuan = true },
-                        modifier = Modifier.weight(1f),
-                        ikon = Icons.Default.HelpOutline
-                    )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    AksiKecilIcon(ikon = Icons.Default.DeleteSweep, label = "Reset", onClick = { onAksi(AksiAplikasi.ResetDraftInputHarian) }, enabled = totalCheck > 0 && !isTerkirim, modifier = Modifier.weight(1f))
+                    AksiKecilIcon(ikon = Icons.Default.HelpOutline, label = "Panduan", onClick = { tampilkanBantuan = true }, modifier = Modifier.weight(1f))
+                    AksiKecilIcon(ikon = Icons.Default.Refresh, label = "Muat Ulang", onClick = { 
+                        val targetLineId = keadaan.lineAktifId ?: keadaan.lineAktif
+                        onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, targetLineId)) 
+                    }, modifier = Modifier.weight(1f))
                 }
             }
 
@@ -518,12 +553,39 @@ private fun PanelRingkasanQC(
                     ProsedurItem("4", "Isi QTY CHECK (Jumlah sampel diperiksa).")
                     ProsedurItem("5", "Catat jumlah defect pada matrix sesuai jam.")
                     ProsedurItem("6", "Pastikan Total Defect tidak melebihi Check.")
-                    ProsedurItem("7", "Kirim ke PGNServer setelah selesai.")
+                    ProsedurItem("7", "Kirim Data ke PGNServer setelah selesai.")
                     
                     Spacer(Modifier.height(16.dp))
                     TombolUtamaQControl(text = "Mengerti", onClick = { tampilkanBantuan = false }, modifier = Modifier.align(Alignment.End))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AksiKecilIcon(
+    ikon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        color = Color.White.copy(alpha = 0.05f),
+        shape = MaterialTheme.shapes.extraSmall,
+        modifier = modifier.height(36.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GarisSubtle)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(ikon, null, modifier = Modifier.size(14.dp), tint = if (enabled) TeksKontrasSedang else TeksDisabled)
+            Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = if (enabled) TeksKontrasSedang else TeksDisabled)
         }
     }
 }
