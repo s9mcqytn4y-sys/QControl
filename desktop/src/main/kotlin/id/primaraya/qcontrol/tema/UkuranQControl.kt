@@ -3,8 +3,8 @@ package id.primaraya.qcontrol.tema
 import androidx.compose.ui.unit.dp
 
 object UkuranQControl {
-    val LebarSidebar = 260.dp
-    val TinggiHeader = 64.dp
+    val LebarSidebar = 240.dp
+    val TinggiHeader = 56.dp
     
     val SpasiKecil = 4.dp
     val SpasiSedang = 8.dp

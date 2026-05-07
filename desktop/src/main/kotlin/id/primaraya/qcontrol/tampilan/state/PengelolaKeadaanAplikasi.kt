@@ -96,7 +96,13 @@ class PengelolaKeadaanAplikasi(
                 _keadaan.update { it.copy(ruteAktif = aksi.rute) }
             }
             is AksiAplikasi.GantiLineAktif -> {
-                _keadaan.update { it.copy(lineAktif = aksi.line) }
+                _keadaan.update { it.copy(
+                    lineAktif = aksi.line,
+                    inputPartTerpilih = null,
+                    matrixInputDefectPart = null
+                ) }
+                muatDraftInputHarian(_keadaan.value.tanggalPemeriksaanHarian, aksi.line)
+                tangani(AksiAplikasi.TampilkanPesanFlash("Line Produksi diubah ke ${aksi.line}", TipePesanFlash.INFO))
             }
             is AksiAplikasi.PeriksaKoneksiServer -> {
                 periksaKoneksi()
@@ -642,7 +648,9 @@ class PengelolaKeadaanAplikasi(
                             sedangMemuatInputHarian = false,
                             draftPemeriksaanHarian = draft,
                             pesanInputHarian = null,
-                            inputPartTerpilih = null
+                            inputPartTerpilih = null,
+                            tanggalPemeriksaanHarian = tanggal,
+                            lineAktif = lineId
                         ) 
                     }
                     muatDaftarInputPart()

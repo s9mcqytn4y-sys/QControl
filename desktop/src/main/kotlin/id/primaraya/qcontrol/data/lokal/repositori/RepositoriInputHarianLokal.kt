@@ -334,6 +334,34 @@ class RepositoriInputHarianLokal(
     fun hitungRingkasan(pemeriksaanHarianId: String): HasilOperasi<RingkasanInputHarian> {
         return try {
             koneksiDatabase.bukaKoneksi().use { koneksi ->
+                // 0. Ambil Line ID untuk hitung total part
+                var lineId = ""
+                val sqlLine = "SELECT line_produksi_id FROM pemeriksaan_harian_draft WHERE id = ?"
+                koneksi.prepareStatement(sqlLine).use { ps ->
+                    ps.setString(1, pemeriksaanHarianId)
+                    val rs = ps.executeQuery()
+                    if (rs.next()) lineId = rs.getString("line_produksi_id")
+                }
+
+                // 1. Hitung Part Sudah Diisi (total_check > 0)
+                var partSudahDiisi = 0
+                val sqlSudah = "SELECT COUNT(*) FROM pemeriksaan_part_draft WHERE pemeriksaan_harian_draft_id = ? AND total_check > 0"
+                koneksi.prepareStatement(sqlSudah).use { ps ->
+                    ps.setString(1, pemeriksaanHarianId)
+                    val rs = ps.executeQuery()
+                    if (rs.next()) partSudahDiisi = rs.getInt(1)
+                }
+
+                // 2. Hitung Total Part di Master untuk Line ini
+                var totalPartMaster = 0
+                val sqlMaster = "SELECT COUNT(*) FROM master_part WHERE line_default_id = ? OR kode_line_default = (SELECT kode_line FROM master_line_produksi WHERE id = ?)"
+                koneksi.prepareStatement(sqlMaster).use { ps ->
+                    ps.setString(1, lineId)
+                    ps.setString(2, lineId)
+                    val rs = ps.executeQuery()
+                    if (rs.next()) totalPartMaster = rs.getInt(1)
+                }
+
                 val sqlTotal = """
                     SELECT SUM(total_check) as t_check, SUM(total_defect) as t_defect
                     FROM pemeriksaan_part_draft
@@ -391,7 +419,16 @@ class RepositoriInputHarianLokal(
                     }
                 }
 
-                HasilOperasi.Berhasil(RingkasanInputHarian(totalQtyCheck, totalQtyDefect, daftarDefect, daftarPerSlot))
+                HasilOperasi.Berhasil(
+                    RingkasanInputHarian(
+                        totalQtyCheck = totalQtyCheck, 
+                        totalQtyDefect = totalQtyDefect, 
+                        totalPartSudahDiisi = partSudahDiisi,
+                        totalPartBelumDiisi = (totalPartMaster - partSudahDiisi).coerceAtLeast(0),
+                        daftarDefect = daftarDefect, 
+                        daftarPerSlot = daftarPerSlot
+                    )
+                )
             }
         } catch (e: Exception) {
             HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal hitung ringkasan: ${e.message}"))

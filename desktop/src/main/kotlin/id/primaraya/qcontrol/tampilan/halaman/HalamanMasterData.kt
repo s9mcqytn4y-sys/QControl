@@ -9,8 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -158,7 +157,7 @@ private fun TabRingkasan(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
 
     if (ringkasan == null) {
         StateKosongQControl(
-            ikon = "📂",
+            ikon = Icons.Default.FolderOpen,
             judul = "Master Data Belum Tersedia",
             pesan = "Tarik master data dari PGNServer agar QControl siap digunakan offline.",
             onAksi = { onAksi(AksiAplikasi.TarikMasterDataDariServer) },
@@ -197,7 +196,7 @@ private fun TabRingkasan(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Uni
 private fun TabDaftarPart(keadaan: KeadaanAplikasi, onAksi: (AksiAplikasi) -> Unit) {
     val daftar = keadaan.daftarPartMaster
     if (daftar.isEmpty()) { 
-        StateKosongQControl(ikon = "🔩", judul = "Part Belum Tersedia", pesan = "Belum ada data part pada cache lokal.")
+        StateKosongQControl(ikon = Icons.Default.PrecisionManufacturing, judul = "Part Belum Tersedia", pesan = "Belum ada data part pada cache lokal.")
         return 
     }
 

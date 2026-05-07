@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,16 +50,17 @@ fun SidebarAplikasi(
                 modifier = Modifier.padding(bottom = UkuranQControl.SpasiSangatBesar)
             ) {
                 Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.size(40.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = Color.White.copy(alpha = 0.05f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, GarisSubtle)
                 ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(8.dp)) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(6.dp)) {
                         Image(
                             painter = painterResource("logo_qcontrol.png"),
                             contentDescription = "Logo QControl",
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
                         )
                     }
                 }

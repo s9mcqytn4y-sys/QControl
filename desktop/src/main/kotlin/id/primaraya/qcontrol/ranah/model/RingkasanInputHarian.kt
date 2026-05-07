@@ -3,6 +3,8 @@ package id.primaraya.qcontrol.ranah.model
 data class RingkasanInputHarian(
     val totalQtyCheck: Int,
     val totalQtyDefect: Int,
+    val totalPartSudahDiisi: Int = 0,
+    val totalPartBelumDiisi: Int = 0,
     val daftarDefect: List<DefectTerhitung>,
     val daftarPerSlot: List<DefectPerSlotTerhitung> = emptyList()
 )

@@ -216,6 +216,46 @@ fun ChipStatusQControl(
 
 @Composable
 fun StateKosongQControl(
+    ikon: ImageVector,
+    judul: String,
+    pesan: String,
+    modifier: Modifier = Modifier,
+    onAksi: (() -> Unit)? = null,
+    labelAksi: String = ""
+) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiSedang),
+            modifier = Modifier.widthIn(max = 450.dp).padding(UkuranQControl.SpasiNormal)
+        ) {
+            Icon(ikon, null, modifier = Modifier.size(80.dp), tint = TeksKontrasRendah.copy(alpha = 0.3f))
+            Text(
+                text = judul,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center,
+                color = TeksKontrasTinggi
+            )
+            Text(
+                text = pesan,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TeksKontrasSedang,
+                textAlign = TextAlign.Center
+            )
+            if (onAksi != null && labelAksi.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(UkuranQControl.SpasiNormal))
+                TombolUtamaQControl(
+                    text = labelAksi,
+                    onClick = onAksi
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StateKosongEmojiQControl(
     ikon: String,
     judul: String,
     pesan: String,

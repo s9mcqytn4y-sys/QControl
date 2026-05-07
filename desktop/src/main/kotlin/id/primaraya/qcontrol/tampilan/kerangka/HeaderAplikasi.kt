@@ -64,9 +64,9 @@ fun HeaderAplikasi(
                 // Status Server
                 val (warnaServer, labelServer) = when (keadaan.statusKoneksi) {
                     StatusKoneksiServer.Tersambung -> BerhasilHijau to "PGNServer Tersambung"
-                    StatusKoneksiServer.Terputus -> GagalMerah to "Mode Lokal"
+                    StatusKoneksiServer.Terputus -> PeringatanKuning to "Mode Offline"
                     StatusKoneksiServer.Memeriksa -> PeringatanKuning to "Memeriksa..."
-                    StatusKoneksiServer.TidakDiperiksa -> TeksKontrasRendah to "Offline"
+                    StatusKoneksiServer.TidakDiperiksa -> TeksKontrasRendah to "Mode Offline"
                 }
                 
                 ChipStatusQControl(
