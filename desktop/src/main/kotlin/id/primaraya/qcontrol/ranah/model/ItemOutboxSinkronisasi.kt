@@ -7,9 +7,11 @@ data class ItemOutboxSinkronisasi(
     val metodeHttp: MetodeHttpSinkronisasi,
     val payloadJson: String,
     val idempotencyKey: String,
+    val hashPayload: String?,
     val status: StatusOutboxSinkronisasi,
     val jumlahPercobaan: Int,
     val pesanGagalTerakhir: String?,
     val dibuatPada: String,
-    val diperbaruiPada: String
+    val diperbaruiPada: String,
+    val dikirimPada: String?
 )

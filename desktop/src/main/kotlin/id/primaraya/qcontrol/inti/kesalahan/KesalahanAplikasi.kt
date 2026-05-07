@@ -8,4 +8,5 @@ sealed class KesalahanAplikasi(val pesan: String) {
     class PenyimpananLokal(pesan: String) : KesalahanAplikasi(pesan)
     class DataKosong(pesan: String) : KesalahanAplikasi(pesan)
     class DataTidakDitemukan(pesan: String) : KesalahanAplikasi(pesan)
+    class Validasi(pesan: String) : KesalahanAplikasi(pesan)
 }

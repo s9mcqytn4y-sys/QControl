@@ -15,19 +15,20 @@ class KelolaInputHarianUseCase(
     }
 
     fun bacaDaftarPart(pemeriksaanHarianId: String, lineId: String, kataKunci: String = ""): HasilOperasi<List<DraftInputPart>> {
-        // Ambil draft yang sudah ada
-        val hasilDraft = repositoriInputHarianLokal.ambilDraftInputPart(pemeriksaanHarianId)
+        // 1. Ambil draft yang sudah tersimpan di SQLite
+        val hasilDraft = repositoriInputHarianLokal.ambilDraftInputPart(pemeriksaanHarianId, kataKunci)
         if (hasilDraft is HasilOperasi.Gagal) return hasilDraft
         
         val draftEksisting = (hasilDraft as HasilOperasi.Berhasil).data
         
-        // Ambil dari master data untuk part yang belum ada di draft, filter berdasarkan LINE
+        // 2. Ambil referensi part aktif dari master data untuk line ini
         val hasilMaster = repositoriMasterDataLokal.bacaDaftarPart(kataKunci, lineId)
         if (hasilMaster is HasilOperasi.Gagal) return HasilOperasi.Berhasil(draftEksisting)
 
         val masterParts = (hasilMaster as HasilOperasi.Berhasil).data
         
-        // Gabungkan: jika di master ada tapi di draft belum ada, tampilkan sebagai draft kosong
+        // 3. Gabungkan: Tampilkan semua part dari master data. 
+        // Jika sudah ada di draft, gunakan datanya. Jika belum, tampilkan sebagai 0.
         val hasilGabungan = masterParts.map { master ->
             val draft = draftEksisting.find { it.partId == master.id }
             DraftInputPart(
@@ -38,7 +39,9 @@ class KelolaInputHarianUseCase(
                 nomorPart = master.nomorPart ?: "",
                 qtyCheck = draft?.qtyCheck ?: 0,
                 totalOk = draft?.totalOk ?: 0,
-                totalDefect = draft?.totalDefect ?: 0
+                totalDefect = draft?.totalDefect ?: 0,
+                rasioDefect = draft?.rasioDefect ?: 0.0,
+                urutanTampil = draft?.urutanTampil ?: 0
             )
         }
         
@@ -46,7 +49,7 @@ class KelolaInputHarianUseCase(
     }
 
     suspend fun updateQtyCheck(pemeriksaanHarianId: String, partId: String, qty: Int): HasilOperasi<Unit> {
-        return repositoriInputHarianLokal.simpanAtauPerbaruiPart(pemeriksaanHarianId, partId, qty)
+        return repositoriInputHarianLokal.updateQtyCheck(pemeriksaanHarianId, partId, qty)
     }
 
     fun bacaDaftarDefectSlot(inputPartId: String): HasilOperasi<List<DraftInputDefectSlot>> {
@@ -60,7 +63,7 @@ class KelolaInputHarianUseCase(
         slotWaktuId: String,
         qty: Int
     ): HasilOperasi<Unit> {
-        return repositoriInputHarianLokal.simpanAtauPerbaruiDefect(
+        return repositoriInputHarianLokal.updateDefectSlot(
             pemeriksaanHarianId,
             partId,
             relasiPartDefectId,
@@ -131,5 +134,9 @@ class KelolaInputHarianUseCase(
 
     fun hitungRingkasan(pemeriksaanHarianId: String): HasilOperasi<RingkasanInputHarian> {
         return repositoriInputHarianLokal.hitungRingkasan(pemeriksaanHarianId)
+    }
+    
+    fun resetDraft(pemeriksaanHarianId: String): HasilOperasi<Unit> {
+        return repositoriInputHarianLokal.hapusDraft(pemeriksaanHarianId)
     }
 }

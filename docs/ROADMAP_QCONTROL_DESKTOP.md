@@ -22,9 +22,8 @@ Dokumen ini merangkum rencana pengembangan QControl sebagai aplikasi Desktop (Wi
 - [x] Fase 2E-B: Matrix Defect x Slot Waktu Dinamis (Lokal Only).
 - [x] Fase 2E-B-R1: Runtime Hardening (Offline Cache, Session Handling, UI Fixes).
 - [x] Fase 2E-C: Premium UI/UX Hardening (Branding, Client Validation, Flash Message).
-- [ ] Fase 2F: Sinkronisasi Transaksi ke Server (Outbox Submit).
-
-## Fase 3: Fitur Bisnis Utama
+- [x] Fase 2F-B: Stabilisasi Input Harian & Sinkronisasi (Daily Input, Sync Contract, Offline Persistence).
+- [ ] Fase 3: Fitur Bisnis Utama
 - [ ] Implementasi Dashboard Utama (Rasio NG, Total Inspeksi).
 - [ ] Modul Inspeksi Harian (Skeleton Input).
 - [ ] Entri Data Defect & Perhitungan Rasio Otomatis.

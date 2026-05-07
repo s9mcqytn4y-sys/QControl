@@ -21,9 +21,9 @@ class RepositoriOutboxSinkronisasi(
                 val sql = """
                     INSERT INTO outbox_sinkronisasi (
                         id, jenis_operasi, endpoint_tujuan, metode_http, payload_json, 
-                        idempotency_key, status, jumlah_percobaan, pesan_gagal_terakhir, 
-                        dibuat_pada, diperbarui_pada
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        idempotency_key, hash_payload, status, jumlah_percobaan, 
+                        pesan_gagal_terakhir, dibuat_pada, diperbarui_pada, dikirim_pada
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent()
                 
                 conn.prepareStatement(sql).use { ps ->
@@ -33,11 +33,13 @@ class RepositoriOutboxSinkronisasi(
                     ps.setString(4, item.metodeHttp.name)
                     ps.setString(5, item.payloadJson)
                     ps.setString(6, item.idempotencyKey)
-                    ps.setString(7, item.status.name)
-                    ps.setInt(8, item.jumlahPercobaan)
-                    ps.setString(9, item.pesanGagalTerakhir)
-                    ps.setString(10, item.dibuatPada)
-                    ps.setString(11, item.diperbaruiPada)
+                    ps.setString(7, item.hashPayload)
+                    ps.setString(8, item.status.name)
+                    ps.setInt(9, item.jumlahPercobaan)
+                    ps.setString(10, item.pesanGagalTerakhir)
+                    ps.setString(11, item.dibuatPada)
+                    ps.setString(12, item.diperbaruiPada)
+                    ps.setString(13, item.dikirimPada)
                     ps.executeUpdate()
                 }
             }
@@ -112,7 +114,19 @@ class RepositoriOutboxSinkronisasi(
     }
 
     fun tandaiBerhasil(id: String): HasilOperasi<Unit> {
-        return perbaruiStatus(id, StatusOutboxSinkronisasi.BERHASIL)
+        return try {
+            koneksi.bukaKoneksi().use { conn ->
+                val sql = "UPDATE outbox_sinkronisasi SET status = ?, dikirim_pada = CURRENT_TIMESTAMP, diperbarui_pada = CURRENT_TIMESTAMP WHERE id = ?"
+                conn.prepareStatement(sql).use { ps ->
+                    ps.setString(1, StatusOutboxSinkronisasi.BERHASIL.name)
+                    ps.setString(2, id)
+                    ps.executeUpdate()
+                }
+            }
+            HasilOperasi.Berhasil(Unit)
+        } catch (e: Exception) {
+            HasilOperasi.Gagal(KesalahanAplikasi.PenyimpananLokal("Gagal menandai outbox berhasil: ${e.message}"))
+        }
     }
 
     fun tandaiGagal(id: String, pesan: String): HasilOperasi<Unit> {

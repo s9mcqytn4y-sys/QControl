@@ -13,11 +13,13 @@ fun ResultSet.keItemOutboxSinkronisasi(): ItemOutboxSinkronisasi {
         metodeHttp = getString("metode_http").keMetodeHttpSinkronisasi(),
         payloadJson = getString("payload_json"),
         idempotencyKey = getString("idempotency_key"),
+        hashPayload = getString("hash_payload"),
         status = getString("status").keStatusOutboxSinkronisasi(),
         jumlahPercobaan = getInt("jumlah_percobaan"),
         pesanGagalTerakhir = getString("pesan_gagal_terakhir"),
         dibuatPada = getString("dibuat_pada"),
-        diperbaruiPada = getString("diperbarui_pada")
+        diperbaruiPada = getString("diperbarui_pada"),
+        dikirimPada = getString("dikirim_pada")
     )
 }
 

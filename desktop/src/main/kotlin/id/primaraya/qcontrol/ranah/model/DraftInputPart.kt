@@ -8,7 +8,9 @@ data class DraftInputPart(
     val nomorPart: String = "",
     val qtyCheck: Int = 0,
     val totalOk: Int = 0,
-    val totalDefect: Int = 0
+    val totalDefect: Int = 0,
+    val rasioDefect: Double = 0.0,
+    val urutanTampil: Int = 0
 )
 
 data class DraftInputDefectSlot(

@@ -102,6 +102,7 @@ fun AplikasiQControl() {
     
     val repositoriInputHarianLokal = remember { RepositoriInputHarianLokal(koneksiDatabaseLokal) }
     val kelolaInputHarianUseCase = remember { KelolaInputHarianUseCase(repositoriInputHarianLokal, repositoriMasterDataLokal) }
+    val kirimPemeriksaanHarianUseCase = remember { KirimPemeriksaanHarianUseCase(repositoriInputHarianLokal, repositoriOutboxSinkronisasi) }
 
 
     val pengelolaSinkronisasi = remember { id.primaraya.qcontrol.tampilan.state.PengelolaSinkronisasi(bacaDaftarOutboxMenungguUseCase, kirimItemOutboxUseCase) }
@@ -128,7 +129,8 @@ fun AplikasiQControl() {
             bacaDaftarLineProduksiMasterUseCase,
             bacaRelasiPartDefectMasterUseCase,
             bacaTemplateDefectPartUseCase,
-            kelolaInputHarianUseCase
+            kelolaInputHarianUseCase,
+            kirimPemeriksaanHarianUseCase
         ) 
     }
     val keadaan by pengelolaState.keadaan.collectAsState()

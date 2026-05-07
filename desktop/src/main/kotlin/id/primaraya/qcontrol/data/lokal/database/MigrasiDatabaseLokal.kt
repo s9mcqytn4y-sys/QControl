@@ -41,6 +41,11 @@ class MigrasiDatabaseLokal(
                 migrasiVersi6(koneksi)
                 catatMigrasi(koneksi, 6, "tambah_tabel_draft_input_harian")
             }
+
+            if (versiSaatIni < 7) {
+                migrasiVersi7(koneksi)
+                catatMigrasi(koneksi, 7, "penyempurnaan_skema_draft_dan_outbox")
+            }
         }
     }
 
@@ -368,6 +373,81 @@ class MigrasiDatabaseLokal(
                 statement.execute(sqlDraftPemeriksaan)
                 statement.execute(sqlDraftInputPart)
                 statement.execute(sqlDraftInputDefectSlot)
+            }
+            koneksi.commit()
+        } catch (e: Exception) {
+            koneksi.rollback()
+            throw e
+        } finally {
+            koneksi.autoCommit = true
+        }
+    }
+
+    private fun migrasiVersi7(koneksi: Connection) {
+        val sqlHarian = """
+            CREATE TABLE IF NOT EXISTS pemeriksaan_harian_draft (
+                id TEXT PRIMARY KEY,
+                client_draft_id TEXT NOT NULL UNIQUE,
+                tanggal_produksi TEXT NOT NULL,
+                line_produksi_id TEXT NOT NULL,
+                nomor_dokumen TEXT,
+                revisi TEXT,
+                catatan TEXT,
+                status_draft TEXT NOT NULL DEFAULT 'DRAFT',
+                idempotency_key TEXT NOT NULL UNIQUE,
+                hash_payload TEXT,
+                terakhir_disimpan_pada TEXT NOT NULL,
+                terakhir_dikirim_pada TEXT,
+                pesan_error_terakhir TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """.trimIndent()
+
+        val sqlPart = """
+            CREATE TABLE IF NOT EXISTS pemeriksaan_part_draft (
+                id TEXT PRIMARY KEY,
+                pemeriksaan_harian_draft_id TEXT NOT NULL,
+                part_id TEXT NOT NULL,
+                total_check INTEGER NOT NULL DEFAULT 0,
+                total_ok INTEGER NOT NULL DEFAULT 0,
+                total_defect INTEGER NOT NULL DEFAULT 0,
+                rasio_defect REAL NOT NULL DEFAULT 0.0,
+                urutan_tampil INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (pemeriksaan_harian_draft_id) REFERENCES pemeriksaan_harian_draft(id),
+                UNIQUE(pemeriksaan_harian_draft_id, part_id)
+            )
+        """.trimIndent()
+
+        val sqlDefect = """
+            CREATE TABLE IF NOT EXISTS pemeriksaan_defect_slot_draft (
+                id TEXT PRIMARY KEY,
+                pemeriksaan_part_draft_id TEXT NOT NULL,
+                relasi_part_defect_id TEXT NOT NULL,
+                slot_waktu_id TEXT NOT NULL,
+                jumlah_defect INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (pemeriksaan_part_draft_id) REFERENCES pemeriksaan_part_draft(id),
+                UNIQUE(pemeriksaan_part_draft_id, relasi_part_defect_id, slot_waktu_id)
+            )
+        """.trimIndent()
+
+        val sqlUpdateOutbox1 = "ALTER TABLE outbox_sinkronisasi ADD COLUMN hash_payload TEXT"
+        val sqlUpdateOutbox2 = "ALTER TABLE outbox_sinkronisasi ADD COLUMN dikirim_pada TEXT"
+
+        koneksi.autoCommit = false
+        try {
+            koneksi.createStatement().use { statement ->
+                statement.execute(sqlHarian)
+                statement.execute(sqlPart)
+                statement.execute(sqlDefect)
+                
+                // Idempotent column addition for outbox
+                try { statement.execute(sqlUpdateOutbox1) } catch (e: Exception) {}
+                try { statement.execute(sqlUpdateOutbox2) } catch (e: Exception) {}
             }
             koneksi.commit()
         } catch (e: Exception) {

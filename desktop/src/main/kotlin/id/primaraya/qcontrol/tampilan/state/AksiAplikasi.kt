@@ -38,6 +38,7 @@ sealed class AksiAplikasi {
     data class UpdateQtyCheckInputPart(val partId: String, val qty: Int) : AksiAplikasi()
     data class UpdateDefectSlot(val partId: String, val slotId: String, val defectId: String, val qty: Int) : AksiAplikasi()
     object ResetDraftInputHarian : AksiAplikasi()
+    object KirimKeServer : AksiAplikasi()
     object MuatUlangDataLokal : AksiAplikasi()
 
     // Flash Message (Fase 2E-C)

@@ -53,6 +53,7 @@ class PengelolaKeadaanAplikasi(
     private val bacaRelasiPartDefectMasterUseCase: BacaRelasiPartDefectMasterUseCase,
     private val bacaTemplateDefectPartUseCase: BacaTemplateDefectPartUseCase,
     private val kelolaInputHarianUseCase: KelolaInputHarianUseCase,
+    private val kirimPemeriksaanHarianUseCase: KirimPemeriksaanHarianUseCase,
     private val lingkup: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _keadaan = MutableStateFlow(KeadaanAplikasi())
@@ -180,10 +181,10 @@ class PengelolaKeadaanAplikasi(
                 updateDefectSlot(aksi.partId, aksi.slotId, aksi.defectId, aksi.qty)
             }
             is AksiAplikasi.ResetDraftInputHarian -> {
-                // Untuk fase ini cukup bersihkan state terpilih dan muat ulang
-                _keadaan.update { it.copy(inputPartTerpilih = null, matrixInputDefectPart = null) }
-                muatDaftarInputPart()
-                tangani(AksiAplikasi.TampilkanPesanFlash("Draft input berhasil direset", TipePesanFlash.INFO))
+                resetDraftInputHarian()
+            }
+            is AksiAplikasi.KirimKeServer -> {
+                kirimKeServer()
             }
             is AksiAplikasi.MuatUlangDataLokal -> {
                 muatMasterDataLokal()
@@ -773,6 +774,47 @@ class PengelolaKeadaanAplikasi(
                     _keadaan.update { it.copy(ringkasanInputHarian = hasil.data as id.primaraya.qcontrol.ranah.model.RingkasanInputHarian) }
                 }
                 is HasilOperasi.Gagal -> {}
+            }
+        }
+    }
+
+    private fun resetDraftInputHarian() {
+        val draftId = _keadaan.value.draftPemeriksaanHarian?.id ?: return
+        lingkup.launch {
+            when (val hasil = kelolaInputHarianUseCase.resetDraft(draftId)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    _keadaan.update { it.copy(inputPartTerpilih = null, matrixInputDefectPart = null) }
+                    muatDaftarInputPart()
+                    muatRingkasanInputHarian()
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Draft input berhasil dikosongkan", TipePesanFlash.INFO))
+                }
+                is HasilOperasi.Gagal -> {
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Gagal reset draft: ${hasil.kesalahan.pesan}", TipePesanFlash.ERROR))
+                }
+            }
+        }
+    }
+
+    private fun kirimKeServer() {
+        val draft = _keadaan.value.draftPemeriksaanHarian ?: return
+        
+        _keadaan.update { it.copy(sedangSinkronisasi = true) }
+        
+        lingkup.launch {
+            when (val hasil = kirimPemeriksaanHarianUseCase.eksekusi(draft)) {
+                is HasilOperasi.Berhasil<*> -> {
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Draft masuk antrean sinkronisasi", TipePesanFlash.SUKSES))
+                    muatRingkasanOutbox()
+                    // Sinkronkan outbox secara proaktif jika online
+                    if (_keadaan.value.statusKoneksi == StatusKoneksiServer.Tersambung) {
+                        pengelolaSinkronisasi.sinkronkanSekarang()
+                    }
+                    muatDraftInputHarian(draft.tanggalProduksi, draft.lineId)
+                }
+                is HasilOperasi.Gagal -> {
+                    _keadaan.update { it.copy(sedangSinkronisasi = false) }
+                    tangani(AksiAplikasi.TampilkanPesanFlash("Gagal mengirim: ${hasil.kesalahan.pesan}", TipePesanFlash.ERROR))
+                }
             }
         }
     }

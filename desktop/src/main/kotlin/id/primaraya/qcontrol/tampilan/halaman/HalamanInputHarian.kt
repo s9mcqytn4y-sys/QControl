@@ -20,6 +20,7 @@ import id.primaraya.qcontrol.ranah.model.*
 import id.primaraya.qcontrol.tampilan.komponen.*
 import id.primaraya.qcontrol.tampilan.state.AksiAplikasi
 import id.primaraya.qcontrol.tampilan.state.KeadaanAplikasi
+import id.primaraya.qcontrol.tampilan.state.StatusKoneksiServer
 import id.primaraya.qcontrol.tema.*
 
 @Composable
@@ -45,32 +46,80 @@ fun HalamanInputHarian(
         return
     }
 
+    Column(modifier = Modifier.fillMaxSize().padding(UkuranQControl.SpasiNormal)) {
+        // --- HEADER HALAMAN ---
+        HeaderInputHarian(keadaan, onAksi)
+        
+        Spacer(Modifier.height(UkuranQControl.SpasiNormal))
+
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiNormal)
+        ) {
+            // --- PANEL KIRI: PILIH PART ---
+            PanelPilihPart(
+                modifier = Modifier.weight(0.25f),
+                keadaan = keadaan,
+                onAksi = onAksi
+            )
+
+            // --- PANEL TENGAH: MATRIX INPUT ---
+            PanelMatrixDefect(
+                modifier = Modifier.weight(0.5f),
+                keadaan = keadaan,
+                onAksi = onAksi
+            )
+
+            // --- PANEL KANAN: RINGKASAN ---
+            PanelRingkasanQC(
+                modifier = Modifier.weight(0.25f),
+                keadaan = keadaan,
+                onAksi = onAksi
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderInputHarian(
+    keadaan: KeadaanAplikasi,
+    onAksi: (AksiAplikasi) -> Unit
+) {
     Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(UkuranQControl.SpasiNormal),
-        horizontalArrangement = Arrangement.spacedBy(UkuranQControl.SpasiNormal)
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // --- PANEL KIRI: PILIH PART ---
-        PanelPilihPart(
-            modifier = Modifier.weight(0.25f),
-            keadaan = keadaan,
-            onAksi = onAksi
-        )
+        Column {
+            Text("Digital Checksheet", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = TeksKontrasTinggi)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Event, null, modifier = Modifier.size(14.dp), tint = TeksKontrasRendah)
+                Spacer(Modifier.width(4.dp))
+                Text("Produksi Tanggal: ${keadaan.tanggalPemeriksaanHarian}", style = MaterialTheme.typography.labelMedium, color = TeksKontrasSedang)
+                Spacer(Modifier.width(16.dp))
+                Icon(Icons.Default.PrecisionManufacturing, null, modifier = Modifier.size(14.dp), tint = TeksKontrasRendah)
+                Spacer(Modifier.width(4.dp))
+                Text("Line: ${keadaan.lineAktif}", style = MaterialTheme.typography.labelMedium, color = TeksKontrasSedang)
+            }
+        }
 
-        // --- PANEL TENGAH: MATRIX INPUT ---
-        PanelMatrixDefect(
-            modifier = Modifier.weight(0.5f),
-            keadaan = keadaan,
-            onAksi = onAksi
-        )
-
-        // --- PANEL KANAN: RINGKASAN ---
-        PanelRingkasanQC(
-            modifier = Modifier.weight(0.25f),
-            keadaan = keadaan,
-            onAksi = onAksi
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val statusDraft = keadaan.draftPemeriksaanHarian?.statusDraft ?: "DRAFT"
+            val warnaStatus = when (statusDraft) {
+                "TERKIRIM" -> BerhasilHijau
+                "SEDANG_DIKIRIM" -> PeringatanKuning
+                else -> TeksKontrasRendah
+            }
+            ChipStatusQControl(label = statusDraft, warna = warnaStatus)
+            
+            Spacer(Modifier.width(16.dp))
+            
+            val isOnline = keadaan.statusKoneksi == StatusKoneksiServer.Tersambung
+            ChipStatusQControl(
+                label = if (isOnline) "SERVER ONLINE" else "MODE LOKAL",
+                warna = if (isOnline) BerhasilHijau else PeringatanKuning
+            )
+        }
     }
 }
 
@@ -80,38 +129,7 @@ private fun PanelPilihPart(
     keadaan: KeadaanAplikasi,
     onAksi: (AksiAplikasi) -> Unit
 ) {
-    PanelPremiumQControl(modifier = modifier, judul = "Pilih Part Produksi") {
-        // Selector Line
-        var expanded by remember { mutableStateOf(false) }
-        val lineTerpilih = keadaan.daftarLineProduksiMaster.find { it.id == keadaan.draftPemeriksaanHarian?.lineId }
-        
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.small,
-                border = androidx.compose.foundation.BorderStroke(1.dp, GarisHalus)
-            ) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(lineTerpilih?.namaLine ?: "Pilih Line...", color = TeksKontrasTinggi)
-                    Icon(Icons.Default.ArrowDropDown, null, tint = TeksKontrasRendah)
-                }
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                keadaan.daftarLineProduksiMaster.forEach { line ->
-                    DropdownMenuItem(
-                        text = { Text(line.namaLine) },
-                        onClick = {
-                            onAksi(AksiAplikasi.MuatDraftInputHarian(keadaan.tanggalPemeriksaanHarian, line.id))
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
+    PanelPremiumQControl(modifier = modifier, judul = "Daftar Part") {
         OutlinedTextField(
             value = keadaan.kataKunciPartInputHarian,
             onValueChange = { onAksi(AksiAplikasi.UbahKataKunciInputPart(it)) },
@@ -123,8 +141,6 @@ private fun PanelPilihPart(
             colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = GarisHalus)
         )
 
-        Spacer(Modifier.height(16.dp))
-        PembatasHalusQControl()
         Spacer(Modifier.height(16.dp))
 
         if (keadaan.daftarInputPartDraft.isEmpty()) {
@@ -151,7 +167,7 @@ private fun PanelPilihPart(
                             }
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(item.namaPart, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = if (isTerpilih) SolarYellow else TeksKontrasTinggi)
+                                Text(item.namaPart, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = if (isTerpilih) SolarYellow else TeksKontrasTinggi, maxLines = 1)
                                 Text(item.nomorPart, style = MaterialTheme.typography.labelSmall, color = TeksKontrasRendah)
                             }
                             if (item.totalDefect > 0) {
@@ -171,7 +187,7 @@ private fun PanelMatrixDefect(
     keadaan: KeadaanAplikasi,
     onAksi: (AksiAplikasi) -> Unit
 ) {
-    PanelPremiumQControl(modifier = modifier, judul = "Matrix Defect per Slot Waktu") {
+    PanelPremiumQControl(modifier = modifier, judul = "Matrix Temuan Defect") {
         val part = keadaan.inputPartTerpilih
         val matrix = keadaan.matrixInputDefectPart
 
@@ -179,7 +195,7 @@ private fun PanelMatrixDefect(
             StateKosongQControl(
                 ikon = "👈",
                 judul = "Pilih Part",
-                pesan = "Silakan pilih line dan part produksi dari panel kiri untuk mulai mencatat temuan defect."
+                pesan = "Silakan pilih part produksi dari panel kiri untuk mulai mencatat temuan defect."
             )
         } else if (matrix == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -195,7 +211,7 @@ private fun PanelMatrixDefect(
             Column {
                 // Info Part Aktif
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(part.namaPart, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = SolarYellow)
                         Text("NOMOR PART: ${part.nomorPart}", style = MaterialTheme.typography.labelSmall, color = TeksKontrasRendah)
                     }
@@ -230,7 +246,7 @@ private fun PanelMatrixDefect(
                         Text("TOTAL", modifier = Modifier.weight(0.1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, color = TeksKontrasRendah)
                     }
                     
-                    LazyColumn {
+                    LazyColumn(modifier = Modifier.weight(1f)) {
                         items(matrix.barisDefect) { baris ->
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(0.3f)) {
@@ -262,6 +278,17 @@ private fun PanelMatrixDefect(
                     }
                     Text(matrix.ringkasan.totalDefectPart.toString(), modifier = Modifier.weight(0.1f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, color = GagalMerah)
                 }
+
+                if (keadaan.pesanValidasiInputHarian != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Surface(color = GagalMerah.copy(alpha = 0.1f), shape = MaterialTheme.shapes.extraSmall, modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Error, null, tint = GagalMerah, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(keadaan.pesanValidasiInputHarian, style = MaterialTheme.typography.labelSmall, color = GagalMerah)
+                        }
+                    }
+                }
             }
         }
     }
@@ -289,9 +316,10 @@ private fun PanelRingkasanQC(
     keadaan: KeadaanAplikasi,
     onAksi: (AksiAplikasi) -> Unit
 ) {
-    PanelPremiumQControl(modifier = modifier, judul = "Ringkasan Pemeriksaan") {
-        val totalCheck = keadaan.ringkasanInputHarian?.totalQtyCheck ?: 0
-        val totalDefect = keadaan.ringkasanInputHarian?.totalQtyDefect ?: 0
+    PanelPremiumQControl(modifier = modifier, judul = "Ringkasan Harian") {
+        val ringkasan = keadaan.ringkasanInputHarian
+        val totalCheck = ringkasan?.totalQtyCheck ?: 0
+        val totalDefect = ringkasan?.totalQtyDefect ?: 0
         val totalOk = totalCheck - totalDefect
         val rasio = if (totalCheck > 0) (totalDefect.toDouble() / totalCheck.toDouble() * 100.0) else 0.0
 
@@ -305,28 +333,43 @@ private fun PanelRingkasanQC(
             PembatasHalusQControl()
             Spacer(Modifier.height(16.dp))
             
-            TombolSekunderQControl(
-                text = "Reset Draft Lokal",
-                onClick = { onAksi(AksiAplikasi.ResetDraftInputHarian) },
-                modifier = Modifier.fillMaxWidth(),
-                ikon = Icons.Default.DeleteSweep
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TombolSekunderQControl(
+                    text = "Reset",
+                    onClick = { onAksi(AksiAplikasi.ResetDraftInputHarian) },
+                    modifier = Modifier.weight(0.4f),
+                    ikon = Icons.Default.DeleteSweep
+                )
+                
+                TombolUtamaQControl(
+                    text = "Kirim ke Server",
+                    onClick = { onAksi(AksiAplikasi.KirimKeServer) },
+                    modifier = Modifier.weight(0.6f),
+                    enabled = totalCheck > 0 && !keadaan.sedangSinkronisasi && keadaan.draftPemeriksaanHarian?.statusDraft != "TERKIRIM",
+                    ikon = Icons.Default.CloudUpload,
+                    sedangMemuat = keadaan.sedangSinkronisasi
+                )
+            }
             
-            TombolUtamaQControl(
-                text = "Kirim ke PGNServer",
-                onClick = { /* Fase berikutnya */ },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = false,
-                ikon = Icons.Default.CloudUpload
-            )
-            
-            Text(
-                text = "Draft tersimpan otomatis di SQLite lokal.",
-                style = MaterialTheme.typography.labelSmall,
-                color = TeksKontrasRendah,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            if (keadaan.draftPemeriksaanHarian?.statusDraft == "TERKIRIM") {
+                Surface(color = BerhasilHijau.copy(alpha = 0.1f), shape = MaterialTheme.shapes.extraSmall, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Data hari ini sudah terkirim ke PGNServer.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BerhasilHijau,
+                        modifier = Modifier.padding(8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                Text(
+                    text = "Draft tersimpan otomatis di SQLite lokal.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TeksKontrasRendah,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }

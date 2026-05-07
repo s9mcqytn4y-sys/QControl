@@ -27,11 +27,13 @@ class BuatItemOutboxSinkronisasiUseCase(
             metodeHttp = metodeHttp,
             payloadJson = payloadJson,
             idempotencyKey = PembuatIdempotencyKey.buat(jenisOperasi, endpointTujuan),
+            hashPayload = null,
             status = StatusOutboxSinkronisasi.MENUNGGU,
             jumlahPercobaan = 0,
             pesanGagalTerakhir = null,
             dibuatPada = sekarang,
-            diperbaruiPada = sekarang
+            diperbaruiPada = sekarang,
+            dikirimPada = null
         )
         
         return repositori.tambah(item)
