@@ -1,12 +1,21 @@
-# CODEX - QControl Context
+# CODEX - QControl
 
-Repo: QControl (Desktop Windows, Kotlin 2.x, Compose Desktop).
-Role: HeadQC (Tunggal).
-Bahasa: Bahasa Indonesia Penuh.
-Arsitektur: inti, konfigurasi, ranah, data, tampilan, tema, utilitas.
+Repo ini adalah aplikasi desktop Windows untuk HeadQC dengan arsitektur aktif `:shared` + `:composeApp`.
 
-**INSTRUKSI UTAMA**:
-Baca dan ikuti panduan lengkap di **AGENTS.md** sebelum memulai tugas. Jangan gunakan library Android.
+## Aturan cepat
+- Baca `AGENTS.md` terlebih dahulu.
+- Gunakan Bahasa Indonesia penuh.
+- Pertahankan offline-first dan strict MVI.
+- Jangan tambahkan dependensi Android.
+- Semua operasi database dan HTTP wajib melalui `Dispatchers.IO`.
 
-## Verifikasi:
-`./gradlew :desktop:compileKotlin --console=plain`
+## Jalur kerja
+- `shared` untuk domain, use case, repositori, SQLDelight, dan utilitas
+- `composeApp` untuk store MVI, UI, navigasi, dan composition root
+
+## Verifikasi
+```bash
+./gradlew :shared:compileKotlinJvm --console=plain --no-daemon
+./gradlew :composeApp:compileKotlin --console=plain --no-daemon
+./gradlew :composeApp:assemble --console=plain --no-daemon
+```

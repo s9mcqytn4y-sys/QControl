@@ -1,12 +1,17 @@
-# CLAUDE - QControl Context
+# CLAUDE - QControl
 
-Identitas: QControl Desktop App (Windows).
-Role: HeadQC (Solo Developer).
-Stack: Kotlin 2.x, Compose Desktop, Ktor, SQLite JDBC.
-Bahasa: Bahasa Indonesia Penuh.
+QControl adalah aplikasi desktop HeadQC dengan arsitektur offline-first yang aktif pada modul `shared` dan `composeApp`.
 
-**SUMBER INSTRUKSI**:
-Seluruh aturan teknis dan arsitektur wajib merujuk ke **AGENTS.md**.
+## Hal yang wajib dijaga
+- Ikuti `AGENTS.md`
+- Gunakan Bahasa Indonesia
+- Jangan hidupkan kembali state lama yang monolitik
+- Hormati status outbox, retry window, dan proteksi token lokal
+- Jangan masukkan placeholder produksi ke sidebar atau dashboard
 
-## Verifikasi:
-`./gradlew :desktop:compileKotlin --console=plain`
+## Verifikasi
+```bash
+./gradlew :shared:compileKotlinJvm --console=plain --no-daemon
+./gradlew :composeApp:compileKotlin --console=plain --no-daemon
+./gradlew :composeApp:assemble --console=plain --no-daemon
+```

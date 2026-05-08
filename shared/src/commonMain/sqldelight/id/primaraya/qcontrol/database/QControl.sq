@@ -1,0 +1,508 @@
+import kotlin.Boolean;
+import kotlin.Double;
+import kotlin.Int;
+import kotlin.Long;
+
+-- Konfigurasi Lokal
+CREATE TABLE konfigurasi_lokal (
+    kunci TEXT PRIMARY KEY,
+    nilai TEXT NOT NULL,
+    diperbarui_pada TEXT NOT NULL
+);
+
+-- Sesi Autentikasi (Token terenkripsi di layer repository)
+CREATE TABLE sesi_autentikasi (
+    id INTEGER AS Long PRIMARY KEY CHECK (id = 1),
+    token TEXT NOT NULL,
+    nama_pengguna TEXT NOT NULL,
+    email TEXT,
+    peran TEXT NOT NULL,
+    dibuat_pada TEXT NOT NULL
+);
+
+-- Master Data: Line Produksi
+CREATE TABLE master_line_produksi (
+    id TEXT PRIMARY KEY,
+    kode_line TEXT NOT NULL UNIQUE,
+    nama_line TEXT NOT NULL,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1,
+    urutan_tampil INTEGER AS Int NOT NULL DEFAULT 0
+);
+
+-- Master Data: Slot Waktu
+CREATE TABLE master_slot_waktu (
+    id TEXT PRIMARY KEY,
+    kode_slot TEXT NOT NULL UNIQUE,
+    label_slot TEXT NOT NULL,
+    jam_mulai TEXT,
+    jam_selesai TEXT,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1,
+    urutan_tampil INTEGER AS Int NOT NULL DEFAULT 0
+);
+
+-- Master Data: Material
+CREATE TABLE master_material (
+    id TEXT PRIMARY KEY,
+    kode_material TEXT NOT NULL UNIQUE,
+    nama_material TEXT NOT NULL,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1
+);
+
+-- Master Data: Part
+CREATE TABLE master_part (
+    id TEXT PRIMARY KEY,
+    kode_unik_part TEXT NOT NULL UNIQUE,
+    nama_part TEXT NOT NULL,
+    nomor_part TEXT,
+    material_id TEXT,
+    kode_material TEXT,
+    nama_material TEXT,
+    kode_proyek TEXT,
+    jumlah_item_per_kanban INTEGER AS Int,
+    line_default_id TEXT,
+    kode_line_default TEXT,
+    nama_line_default TEXT,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1,
+    sumber_data TEXT
+);
+
+-- Master Data: Kategori Defect
+CREATE TABLE master_kategori_defect (
+    id TEXT PRIMARY KEY,
+    kode_kategori TEXT NOT NULL UNIQUE,
+    nama_kategori TEXT NOT NULL,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1,
+    urutan_tampil INTEGER AS Int NOT NULL DEFAULT 0
+);
+
+-- Master Data: Jenis Defect
+CREATE TABLE master_jenis_defect (
+    id TEXT PRIMARY KEY,
+    kode_defect TEXT NOT NULL UNIQUE,
+    nama_defect TEXT NOT NULL,
+    kategori_defect_id TEXT,
+    kode_kategori TEXT,
+    nama_kategori TEXT,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1
+);
+
+-- Master Data: Relasi Part Defect (Template)
+CREATE TABLE master_relasi_part_defect (
+    id TEXT PRIMARY KEY,
+    part_id TEXT NOT NULL,
+    jenis_defect_id TEXT NOT NULL,
+    kode_tampilan_defect TEXT,
+    urutan_tampil INTEGER AS Int NOT NULL DEFAULT 0,
+    aktif INTEGER AS Boolean NOT NULL DEFAULT 1,
+    UNIQUE(part_id, jenis_defect_id)
+);
+
+-- Metadata Master Data
+CREATE TABLE metadata_master_data (
+    kunci TEXT PRIMARY KEY,
+    nilai TEXT NOT NULL,
+    diperbarui_pada TEXT NOT NULL
+);
+
+-- Input Harian: Draft Harian
+CREATE TABLE pemeriksaan_harian_draft (
+    id TEXT PRIMARY KEY,
+    client_draft_id TEXT NOT NULL UNIQUE,
+    tanggal_produksi TEXT NOT NULL,
+    line_produksi_id TEXT NOT NULL,
+    nomor_dokumen TEXT,
+    revisi TEXT,
+    catatan TEXT,
+    status_draft TEXT NOT NULL DEFAULT 'DRAFT',
+    idempotency_key TEXT NOT NULL UNIQUE,
+    hash_payload TEXT,
+    terakhir_disimpan_pada TEXT NOT NULL,
+    terakhir_dikirim_pada TEXT,
+    pesan_error_terakhir TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- Input Harian: Part Draft
+CREATE TABLE pemeriksaan_part_draft (
+    id TEXT PRIMARY KEY,
+    pemeriksaan_harian_draft_id TEXT NOT NULL,
+    part_id TEXT NOT NULL,
+    total_check INTEGER AS Int NOT NULL DEFAULT 0,
+    total_ok INTEGER AS Int NOT NULL DEFAULT 0,
+    total_defect INTEGER AS Int NOT NULL DEFAULT 0,
+    rasio_defect REAL AS Double NOT NULL DEFAULT 0.0,
+    urutan_tampil INTEGER AS Int NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (pemeriksaan_harian_draft_id) REFERENCES pemeriksaan_harian_draft(id) ON DELETE CASCADE,
+    UNIQUE(pemeriksaan_harian_draft_id, part_id)
+);
+
+-- Input Harian: Defect Slot Draft
+CREATE TABLE pemeriksaan_defect_slot_draft (
+    id TEXT PRIMARY KEY,
+    pemeriksaan_part_draft_id TEXT NOT NULL,
+    relasi_part_defect_id TEXT NOT NULL,
+    slot_waktu_id TEXT NOT NULL,
+    jumlah_defect INTEGER AS Int NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (pemeriksaan_part_draft_id) REFERENCES pemeriksaan_part_draft(id) ON DELETE CASCADE,
+    UNIQUE(pemeriksaan_part_draft_id, relasi_part_defect_id, slot_waktu_id)
+);
+
+-- Input Harian: Produksi Tanpa NG Draft
+CREATE TABLE pemeriksaan_produksi_tanpa_ng_draft (
+    id TEXT PRIMARY KEY,
+    pemeriksaan_harian_draft_id TEXT NOT NULL,
+    part_id TEXT NOT NULL,
+    total_produksi INTEGER AS Int NOT NULL DEFAULT 0,
+    catatan TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (pemeriksaan_harian_draft_id) REFERENCES pemeriksaan_harian_draft(id) ON DELETE CASCADE,
+    UNIQUE(pemeriksaan_harian_draft_id, part_id)
+);
+
+-- Outbox Sinkronisasi (Enhanced)
+CREATE TABLE outbox_sinkronisasi (
+    id TEXT PRIMARY KEY,
+    jenis_operasi TEXT NOT NULL,
+    endpoint_tujuan TEXT NOT NULL,
+    metode_http TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    hash_payload TEXT,
+    status TEXT NOT NULL, -- MENUNGGU, SEDANG_DIKIRIM, GAGAL_SEMENTARA, KONFLIK, BERHASIL
+    jumlah_percobaan INTEGER AS Int NOT NULL DEFAULT 0,
+    maks_percobaan INTEGER AS Int NOT NULL DEFAULT 5,
+    next_retry_at TEXT,
+    last_http_status INTEGER AS Int,
+    last_error_code TEXT,
+    pesan_gagal_terakhir TEXT,
+    dibuat_pada TEXT NOT NULL,
+    diperbarui_pada TEXT NOT NULL,
+    dikirim_pada TEXT
+);
+
+-- Queries: Konfigurasi
+dapatkanKonfigurasi:
+SELECT * FROM konfigurasi_lokal WHERE kunci = ?;
+
+simpanKonfigurasi:
+INSERT OR REPLACE INTO konfigurasi_lokal (kunci, nilai, diperbarui_pada) VALUES (?, ?, ?);
+
+-- Queries: Sesi
+dapatkanSesi:
+SELECT * FROM sesi_autentikasi WHERE id = 1;
+
+simpanSesi:
+INSERT OR REPLACE INTO sesi_autentikasi (id, token, nama_pengguna, email, peran, dibuat_pada) VALUES (1, ?, ?, ?, ?, ?);
+
+hapusSesi:
+DELETE FROM sesi_autentikasi WHERE id = 1;
+
+-- Queries: Master Data
+-- Line Produksi
+dapatkanSemuaLine:
+SELECT * FROM master_line_produksi ORDER BY urutan_tampil ASC;
+
+simpanLine:
+INSERT OR REPLACE INTO master_line_produksi (id, kode_line, nama_line, aktif, urutan_tampil) VALUES (?, ?, ?, ?, ?);
+
+hapusSemuaLine:
+DELETE FROM master_line_produksi;
+
+-- Slot Waktu
+dapatkanSemuaSlotWaktu:
+SELECT * FROM master_slot_waktu ORDER BY urutan_tampil ASC;
+
+simpanSlotWaktu:
+INSERT OR REPLACE INTO master_slot_waktu (id, kode_slot, label_slot, jam_mulai, jam_selesai, aktif, urutan_tampil) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+hapusSemuaSlotWaktu:
+DELETE FROM master_slot_waktu;
+
+-- Material
+dapatkanSemuaMaterial:
+SELECT * FROM master_material ORDER BY nama_material ASC;
+
+cariMaterial:
+SELECT * FROM master_material WHERE nama_material LIKE ? OR kode_material LIKE ? ORDER BY nama_material ASC;
+
+simpanMaterial:
+INSERT OR REPLACE INTO master_material (id, kode_material, nama_material, aktif) VALUES (?, ?, ?, ?);
+
+hapusSemuaMaterial:
+DELETE FROM master_material;
+
+-- Part
+dapatkanSemuaPart:
+SELECT * FROM master_part WHERE aktif = 1 ORDER BY nama_part ASC;
+
+cariPart:
+SELECT * FROM master_part
+WHERE aktif = 1
+AND (nama_part LIKE ? OR kode_unik_part LIKE ? OR nomor_part LIKE ? OR nama_material LIKE ? OR kode_proyek LIKE ?)
+ORDER BY nama_part ASC;
+
+cariPartPerLine:
+SELECT * FROM master_part
+WHERE aktif = 1
+AND (line_default_id = :line OR kode_line_default = :line OR nama_line_default = :line)
+AND (nama_part LIKE :query OR kode_unik_part LIKE :query OR nomor_part LIKE :query OR nama_material LIKE :query OR kode_proyek LIKE :query)
+ORDER BY nama_part ASC;
+
+simpanPart:
+INSERT OR REPLACE INTO master_part
+(id, kode_unik_part, nama_part, nomor_part, material_id, kode_material, nama_material,
+kode_proyek, jumlah_item_per_kanban, line_default_id, kode_line_default, nama_line_default,
+aktif, sumber_data)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+hapusSemuaPart:
+DELETE FROM master_part;
+
+-- Kategori Defect
+simpanKategoriDefect:
+INSERT OR REPLACE INTO master_kategori_defect (id, kode_kategori, nama_kategori, aktif, urutan_tampil) VALUES (?, ?, ?, ?, ?);
+
+hapusSemuaKategoriDefect:
+DELETE FROM master_kategori_defect;
+
+-- Jenis Defect
+dapatkanSemuaJenisDefect:
+SELECT * FROM master_jenis_defect ORDER BY kode_defect ASC;
+
+cariJenisDefect:
+SELECT * FROM master_jenis_defect WHERE nama_defect LIKE ? OR kode_defect LIKE ? ORDER BY kode_defect ASC;
+
+simpanJenisDefect:
+INSERT OR REPLACE INTO master_jenis_defect (id, kode_defect, nama_defect, kategori_defect_id, kode_kategori, nama_kategori, aktif) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+hapusSemuaJenisDefect:
+DELETE FROM master_jenis_defect;
+
+-- Relasi Part Defect
+dapatkanRelasiPartDefect:
+SELECT * FROM master_relasi_part_defect WHERE part_id = ? ORDER BY urutan_tampil ASC;
+
+dapatkanTemplateDefectPart:
+SELECT
+    r.id,
+    r.part_id,
+    r.jenis_defect_id,
+    r.kode_tampilan_defect,
+    r.urutan_tampil,
+    r.aktif,
+    j.kode_defect,
+    j.nama_defect,
+    j.nama_kategori
+FROM master_relasi_part_defect r
+LEFT JOIN master_jenis_defect j ON r.jenis_defect_id = j.id
+WHERE r.part_id = ?
+ORDER BY r.urutan_tampil ASC;
+
+simpanRelasiPartDefect:
+INSERT OR REPLACE INTO master_relasi_part_defect (id, part_id, jenis_defect_id, kode_tampilan_defect, urutan_tampil, aktif) VALUES (?, ?, ?, ?, ?, ?);
+
+hapusSemuaRelasiPartDefect:
+DELETE FROM master_relasi_part_defect;
+
+-- Metadata
+dapatkanSemuaMetadata:
+SELECT * FROM metadata_master_data;
+
+simpanMetadata:
+INSERT OR REPLACE INTO metadata_master_data (kunci, nilai, diperbarui_pada) VALUES (?, ?, ?);
+
+hapusSemuaMetadata:
+DELETE FROM metadata_master_data;
+
+-- Diagnostik
+hitungTotalPart: SELECT COUNT(*) FROM master_part;
+hitungTotalLine: SELECT COUNT(*) FROM master_line_produksi;
+hitungTotalSlotWaktu: SELECT COUNT(*) FROM master_slot_waktu;
+hitungTotalRelasiPartDefect: SELECT COUNT(*) FROM master_relasi_part_defect;
+hitungPartPerLine: SELECT COUNT(*) FROM master_part WHERE line_default_id = ? OR kode_line_default = ? OR nama_line_default = ?;
+
+-- Input Harian
+dapatkanDraftHarian:
+SELECT * FROM pemeriksaan_harian_draft WHERE tanggal_produksi = ? AND line_produksi_id = ?;
+
+dapatkanDraftHarianById:
+SELECT * FROM pemeriksaan_harian_draft WHERE id = ?;
+
+simpanDraftHarian:
+INSERT OR REPLACE INTO pemeriksaan_harian_draft (
+    id, client_draft_id, tanggal_produksi, line_produksi_id,
+    nomor_dokumen, revisi, catatan, status_draft, idempotency_key,
+    hash_payload, terakhir_disimpan_pada, terakhir_dikirim_pada,
+    pesan_error_terakhir, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateWaktuSimpanHarian:
+UPDATE pemeriksaan_harian_draft SET terakhir_disimpan_pada = ?, updated_at = ? WHERE id = ?;
+
+updateStatusDraft:
+UPDATE pemeriksaan_harian_draft SET status_draft = ?, hash_payload = ?, updated_at = ? WHERE id = ?;
+
+hapusDraftHarian:
+DELETE FROM pemeriksaan_harian_draft WHERE id = ?;
+
+-- Part Draft
+dapatkanDaftarPartDraft:
+SELECT d.*, m.nama_part, m.nomor_part
+FROM pemeriksaan_part_draft d
+JOIN master_part m ON d.part_id = m.id
+WHERE d.pemeriksaan_harian_draft_id = ?
+AND (m.nama_part LIKE ? OR m.nomor_part LIKE ?)
+ORDER BY d.urutan_tampil ASC, m.nama_part ASC;
+
+dapatkanPartDraft:
+SELECT * FROM pemeriksaan_part_draft WHERE pemeriksaan_harian_draft_id = ? AND part_id = ?;
+
+simpanPartDraft:
+INSERT OR REPLACE INTO pemeriksaan_part_draft (
+    id, pemeriksaan_harian_draft_id, part_id, total_check,
+    total_ok, total_defect, rasio_defect, urutan_tampil, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateQtyPartDraft:
+UPDATE pemeriksaan_part_draft SET
+total_check = :total_check,
+total_ok = :total_check - total_defect,
+rasio_defect = CASE WHEN :total_check > 0 THEN (CAST(total_defect AS REAL) / :total_check) * 100.0 ELSE 0.0 END,
+updated_at = :updated_at
+WHERE id = :id;
+
+updateTotalDefectPartDraft:
+UPDATE pemeriksaan_part_draft SET
+total_defect = (SELECT COALESCE(SUM(jumlah_defect), 0) FROM pemeriksaan_defect_slot_draft WHERE pemeriksaan_part_draft_id = ?),
+updated_at = ?
+WHERE id = ?;
+
+updateFinalKalkulasiPartDraft:
+UPDATE pemeriksaan_part_draft SET
+total_ok = total_check - total_defect,
+rasio_defect = CASE WHEN total_check > 0 THEN (CAST(total_defect AS REAL) / total_check) * 100.0 ELSE 0.0 END
+WHERE id = ?;
+
+hapusSemuaPartDraft:
+DELETE FROM pemeriksaan_part_draft WHERE pemeriksaan_harian_draft_id = ?;
+
+-- Defect Slot Draft
+dapatkanDaftarDefectSlotDraft:
+SELECT d.*, m.nama_defect
+FROM pemeriksaan_defect_slot_draft d
+JOIN master_relasi_part_defect r ON r.id = d.relasi_part_defect_id
+JOIN master_jenis_defect m ON r.jenis_defect_id = m.id
+WHERE d.pemeriksaan_part_draft_id = ?;
+
+simpanDefectSlotDraft:
+INSERT OR REPLACE INTO pemeriksaan_defect_slot_draft (
+    id, pemeriksaan_part_draft_id, relasi_part_defect_id,
+    slot_waktu_id, jumlah_defect, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+hapusSemuaDefectSlotDraft:
+DELETE FROM pemeriksaan_defect_slot_draft WHERE pemeriksaan_part_draft_id = ?;
+
+-- Produksi Tanpa NG Draft
+dapatkanDaftarProduksiTanpaNgDraft:
+SELECT d.*, m.nama_part, m.nomor_part
+FROM pemeriksaan_produksi_tanpa_ng_draft d
+JOIN master_part m ON d.part_id = m.id
+WHERE d.pemeriksaan_harian_draft_id = ?
+ORDER BY m.nama_part ASC;
+
+simpanProduksiTanpaNgDraft:
+INSERT OR REPLACE INTO pemeriksaan_produksi_tanpa_ng_draft (
+    id, pemeriksaan_harian_draft_id, part_id, total_produksi,
+    catatan, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+hapusSemuaProduksiTanpaNgDraft:
+DELETE FROM pemeriksaan_produksi_tanpa_ng_draft WHERE pemeriksaan_harian_draft_id = ?;
+
+-- Ringkasan Input Harian Queries
+hitungPartSudahDiisi:
+SELECT COUNT(*) FROM pemeriksaan_part_draft WHERE pemeriksaan_harian_draft_id = ? AND total_check > 0;
+
+hitungTotalPartPerLine:
+SELECT COUNT(*) FROM master_part
+WHERE line_default_id = ?
+OR kode_line_default = (SELECT kode_line FROM master_line_produksi WHERE id = ?)
+OR nama_line_default = (SELECT nama_line FROM master_line_produksi WHERE id = ?);
+
+hitungTotalQtyHarian:
+SELECT SUM(total_check) AS t_check, SUM(total_defect) AS t_defect
+FROM pemeriksaan_part_draft
+WHERE pemeriksaan_harian_draft_id = ?;
+
+hitungDefectPerJenisHarian:
+SELECT m.nama_defect, SUM(d.jumlah_defect) AS jumlah
+FROM pemeriksaan_defect_slot_draft d
+JOIN pemeriksaan_part_draft p ON d.pemeriksaan_part_draft_id = p.id
+JOIN master_relasi_part_defect r ON d.relasi_part_defect_id = r.id
+JOIN master_jenis_defect m ON r.jenis_defect_id = m.id
+WHERE p.pemeriksaan_harian_draft_id = ?
+GROUP BY m.nama_defect
+HAVING jumlah > 0;
+
+hitungDefectPerSlotHarian:
+SELECT s.id, s.label_slot, SUM(d.jumlah_defect) AS jumlah
+FROM pemeriksaan_defect_slot_draft d
+JOIN pemeriksaan_part_draft p ON d.pemeriksaan_part_draft_id = p.id
+JOIN master_slot_waktu s ON d.slot_waktu_id = s.id
+WHERE p.pemeriksaan_harian_draft_id = ?
+GROUP BY s.id, s.label_slot
+HAVING jumlah > 0;
+
+-- Outbox Queries
+dapatkanOutboxById:
+SELECT * FROM outbox_sinkronisasi WHERE id = ?;
+
+dapatkanDaftarOutboxMenunggu:
+SELECT * FROM outbox_sinkronisasi
+WHERE status = 'MENUNGGU'
+   OR (
+        status = 'GAGAL_SEMENTARA'
+    AND jumlah_percobaan < maks_percobaan
+    AND (next_retry_at IS NULL OR next_retry_at <= :waktu_sekarang)
+   )
+ORDER BY COALESCE(next_retry_at, dibuat_pada) ASC;
+
+dapatkanOutboxBerhasilTerakhir:
+SELECT * FROM outbox_sinkronisasi WHERE status = 'BERHASIL' ORDER BY dikirim_pada DESC LIMIT 1;
+
+simpanOutbox:
+INSERT OR REPLACE INTO outbox_sinkronisasi (
+    id, jenis_operasi, endpoint_tujuan, metode_http, payload_json,
+    idempotency_key, hash_payload, status, jumlah_percobaan, maks_percobaan,
+    next_retry_at, last_http_status, last_error_code, pesan_gagal_terakhir,
+    dibuat_pada, diperbarui_pada, dikirim_pada
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateStatusOutbox:
+UPDATE outbox_sinkronisasi SET
+status = ?,
+jumlah_percobaan = ?,
+next_retry_at = ?,
+last_http_status = ?,
+last_error_code = ?,
+pesan_gagal_terakhir = ?,
+diperbarui_pada = ?,
+dikirim_pada = ?
+WHERE id = ?;
+
+resetOutboxSedangDikirim:
+UPDATE outbox_sinkronisasi
+SET status = 'MENUNGGU',
+    next_retry_at = NULL,
+    diperbarui_pada = CURRENT_TIMESTAMP
+WHERE status = 'SEDANG_DIKIRIM';
+
+hitungRingkasanOutbox:
+SELECT status, COUNT(*) AS jumlah FROM outbox_sinkronisasi GROUP BY status;

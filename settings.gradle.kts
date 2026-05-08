@@ -15,4 +15,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "QControl"
-include(":desktop")
+include(":composeApp")
+include(":shared")
